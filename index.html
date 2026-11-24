@@ -1174,25 +1174,63 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     return { list: out, bad: bad };
   }
   function openRoles() {
-    modal('<h2 style="margin:0 0 4px;font-size:18px">Tài khoản được phép</h2><div class="muted small">Đang tải…</div>');
-    S.db.doc('config/roles').get().then(function (snap) {
-      var r = snap.exists ? (snap.data() || {}) : {};
-      var me = window.KK ? window.KK.email() : '';
-      modal('<h2 style="margin:0 0 4px;font-size:18px">Tài khoản được phép</h2>' +
-        '<p class="small" style="margin:0 0 8px"><b>Nhân viên:</b> mỗi người cần một tài khoản do quản trị tạo trong Supabase (Authentication → Users → Add user → Create new user, tích <i>Auto Confirm User</i>). Ai có tài khoản là đếm và nộp được. Xóa tài khoản ở đó là người đó mất quyền ngay.</p>' +
-        '<p class="muted small" style="margin:0">Quản trị chính là ' + esc(window.KK ? window.KK.ownerNote : '') + (me ? ' (bạn đang dùng ' + esc(me) + ')' : '') + '.</p>' +
-        '<label class="f" for="rAdmins">Quản trị thêm (xem số sổ, duyệt, sửa danh mục), mỗi dòng một email</label><textarea id="rAdmins" rows="3" placeholder="quanly@gmail.com">' + esc((r.admins || []).join('\n')) + '</textarea>' +
-        '<div id="rErr" class="small" role="alert" style="color:var(--bad);margin-top:6px;min-height:20px"></div>' +
-        '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="rCancel">Hủy</button><button class="btn pri" id="rOk">Lưu danh sách</button></div>');
-      $('rCancel').onclick = closeModal;
-      $('rOk').onclick = function () {
-        var ad = parseEmails($('rAdmins').value);
-        if (ad.bad.length) { $('rErr').textContent = 'Email chưa đúng: ' + ad.bad.join(', '); return; }
-        $('rOk').disabled = true;
-        S.db.doc('config/roles').set({ admins: ad.list, at: iso(), by: myId() })
-          .then(function () { closeModal(); toast('Đã lưu ' + ad.list.length + ' quản trị thêm'); })
-          .catch(function (e) { var b = $('rOk'); if (b) b.disabled = false; fail(e); });
-      };
+    var T = '<h2 style="margin:0 0 4px;font-size:18px">Tài khoản được phép</h2>';
+    modal(T + '<div class="muted small">Đang tải…</div>');
+    Promise.all([S.db.doc('config/roles').get(), S.db.collection('users').get()]).then(function (res) {
+      var r = res[0].exists ? (res[0].data() || {}) : {};
+      var me = window.KK ? window.KK.email().toLowerCase() : '';
+      var admins = (r.admins || []).map(function (e) { return String(e).toLowerCase(); });
+      var owner = (r.owner || '').toLowerCase();
+      if (S.OWNER && me && admins.indexOf(me) < 0) owner = me; /* chỉ quản trị chính mới là quản trị mà không có trong danh sách */
+      var seen = {};
+      res[1].docs.forEach(function (d) { var x = d.data() || {}; var e = (x.email || '').toLowerCase(); if (e && (!seen[e] || (x.at || '') > (seen[e].at || ''))) seen[e] = { name: x.name, at: x.at }; });
+      var dirty = false;
+      function rows() {
+        var list = {};
+        Object.keys(seen).forEach(function (e) { list[e] = 1; });
+        admins.forEach(function (e) { list[e] = 1; });
+        if (owner) list[owner] = 1;
+        function rank(e) { return e === owner ? 0 : admins.indexOf(e) >= 0 ? 1 : 2; }
+        return Object.keys(list).sort(function (x, y) { return rank(x) - rank(y) || x.localeCompare(y); });
+      }
+      function draw() {
+        var rs = rows(), nA = admins.length + (owner ? 1 : 0);
+        var body = rs.map(function (e, i) {
+          var u = seen[e] || {}, role, act = '';
+          if (e === owner) role = '<span class="badge app">Quản trị chính</span>';
+          else if (admins.indexOf(e) >= 0) { role = '<span class="badge sub">Quản trị thêm</span>'; act = '<button class="btn danger" style="min-height:34px" data-rm="' + esc(e) + '">Bỏ quyền quản trị</button>'; }
+          else { role = 'Nhân viên'; act = '<button class="btn" style="min-height:34px" data-add="' + esc(e) + '">Cấp quyền quản trị</button>'; }
+          var name = u.name && u.name.toLowerCase() !== e ? esc(u.name) : '';
+          return '<tr><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + role + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td><td style="white-space:nowrap;text-align:right">' + act + '</td></tr>';
+        }).join('');
+        modal(T + '<p class="muted small" style="margin:0 0 10px">' + rs.length + ' tài khoản, trong đó ' + nA + ' quản trị. Quản trị xem được số sổ, duyệt đợt và sửa danh mục. Nhân viên chỉ đếm và nộp.</p>' +
+          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px"><table class="kk" style="min-width:600px"><thead><tr><th style="width:36px;text-align:right">STT</th><th>Email</th><th>Vai trò</th><th>Lần vào gần nhất</th><th style="text-align:right">Thao tác</th></tr></thead><tbody>' +
+          (body || '<tr><td colspan="5" class="muted">Chưa có tài khoản nào đăng nhập.</td></tr>') + '</tbody></table></div>' +
+          '<label class="f" for="rNew">Thêm quản trị bằng email</label><div class="row" style="gap:8px;flex-wrap:nowrap"><input id="rNew" type="email" placeholder="quanly@gmail.com" style="flex:1;min-width:0"><button class="btn" id="rAddBtn">Thêm</button></div>' +
+          '<div id="rErr" class="small" role="alert" style="color:var(--bad);margin-top:6px;min-height:20px"></div>' +
+          '<p class="muted small" style="margin:0">Bảng liệt kê những tài khoản đã đăng nhập app ít nhất một lần. Tạo hoặc xóa tài khoản nhân viên ở Supabase: Authentication → Users (khi tạo nhớ tích <i>Auto Confirm User</i>). Xóa ở đó là người đó mất quyền ngay.</p>' +
+          '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="rCancel">' + (dirty ? 'Hủy thay đổi' : 'Đóng') + '</button><button class="btn pri" id="rOk"' + (dirty ? '' : ' disabled') + '>Lưu thay đổi</button></div>');
+        var card = document.querySelector('#modal .card'); if (card) card.style.maxWidth = '720px';
+        document.querySelectorAll('#modal [data-rm]').forEach(function (b) { b.onclick = function () { admins = admins.filter(function (x) { return x !== b.getAttribute('data-rm'); }); dirty = true; draw(); }; });
+        document.querySelectorAll('#modal [data-add]').forEach(function (b) { b.onclick = function () { admins.push(b.getAttribute('data-add')); dirty = true; draw(); }; });
+        function addNew() {
+          var v = parseEmails($('rNew').value);
+          if (v.bad.length || !v.list.length) { $('rErr').textContent = v.bad.length ? 'Email chưa đúng: ' + v.bad.join(', ') : 'Nhập email cần thêm.'; return; }
+          v.list.forEach(function (e) { e = e.toLowerCase(); if (e !== owner && admins.indexOf(e) < 0) admins.push(e); });
+          dirty = true; draw();
+        }
+        $('rAddBtn').onclick = addNew;
+        $('rNew').onkeydown = function (ev) { if (ev.key === 'Enter') addNew(); };
+        $('rCancel').onclick = closeModal;
+        $('rOk').onclick = function () {
+          $('rOk').disabled = true;
+          var doc = { admins: admins, at: iso(), by: myId() }; if (owner) doc.owner = owner;
+          S.db.doc('config/roles').set(doc)
+            .then(function () { closeModal(); toast('Đã lưu: ' + admins.length + ' quản trị thêm'); })
+            .catch(function (e) { var b = $('rOk'); if (b) b.disabled = false; fail(e); });
+        };
+      }
+      draw();
     }).catch(function (e) { closeModal(); fail(e); });
   }
   function openMyPw() {
