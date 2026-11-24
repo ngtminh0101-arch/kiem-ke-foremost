@@ -467,7 +467,7 @@ window.__apDone=function(){fin=true};tick()})();</script>
   <label class="fl" for="d7_new">Thêm Gmail (dán nhiều địa chỉ, cách nhau bằng dấu phẩy cũng được)</label>
   <div class="addrow"><input id="d7_new" type="email" inputmode="email" autocomplete="off" placeholder="nhanvien1@gmail.com"><select id="d7_role" aria-label="Vai trò"><option value="staff">Nhân viên</option><option value="admin">Quản trị thêm</option></select><button class="btn" type="button" id="d7_add">Thêm</button></div>
   <div class="err" id="d7_err" role="alert"></div>
-  <div class="sm2">Danh sách này dùng chung với app Kiểm kê Foremost. Chọn <i>Không có quyền</i> để chặn một người.</div>
+  <div class="sm2">Danh sách này chỉ dùng cho app Kiểm kê Bakery, tách riêng với app Foremost. Chọn <i>Không có quyền</i> để chặn một người.</div>
   <div class="acts"><button class="btn" type="button" id="d7_cancel">Đóng</button><button class="btn pri" type="submit" id="d7_ok" disabled>Lưu thay đổi</button></div>
 </form></dialog>
 <div id="pdfpages" aria-hidden="true"></div>
@@ -873,7 +873,7 @@ $("#dlgf6").addEventListener("submit",function(e){e.preventDefault();if(!imp)ret
   Promise.all(w).then(function(){$("#dlg6").close();toast("Đã nhập dữ liệu")},function(){$("#d6_err").textContent="Không nhập được (cần quyền quản trị), thử lại."}).then(function(){b.disabled=false;b.textContent="Nhập dữ liệu"})});
 
 
-/* ===== Tài khoản được phép (dùng chung config/roles với Foremost) ===== */
+/* ===== Tài khoản được phép (danh sách riêng bk_roles/main) ===== */
 var R7=null;
 function r7role(e){return e===R7.owner?"owner":R7.admins.indexOf(e)>=0?"admin":R7.staff.indexOf(e)>=0?"staff":"none"}
 function r7set(e,role){R7.admins=R7.admins.filter(function(x){return x!==e});R7.staff=R7.staff.filter(function(x){return x!==e});if(role==="admin")R7.admins.push(e);else if(role==="staff")R7.staff.push(e);R7.dirty=true;r7draw()}
@@ -891,13 +891,13 @@ function r7add(){var bad=[],ok=[];String($("#d7_new").value||"").split(/[\s,;]+/
   if(bad.length||!ok.length){$("#d7_err").textContent=bad.length?"Email chưa đúng: "+bad.join(", "):"Nhập Gmail cần thêm.";return}
   $("#d7_err").textContent="";var role=$("#d7_role").value;ok.forEach(function(e){if(e!==R7.owner)r7set(e,role)});$("#d7_new").value=""}
 $("#btnAcc").addEventListener("click",function(){if(!window.KKB)return;var fs=KKB.fs;$("#d7_err").textContent="";$("#d7_new").value="";$("#d7_list").innerHTML="";$("#d7_sum").textContent="Đang tải…";$("#d7_ok").disabled=true;$("#dlg7").showModal();
-  Promise.all([fs.doc("config/roles").get(),fs.collection("users").get().catch(function(){return{docs:[]}})]).then(function(r){var d=r[0].exists?(r[0].data()||{}):{};
+  Promise.all([fs.doc("bk_roles/main").get(),fs.collection("bk_users").get().catch(function(){return{docs:[]}})]).then(function(r){var d=r[0].exists?(r[0].data()||{}):{};
     var low=function(a){return(a||[]).map(function(x){return String(x).toLowerCase()})},me=String(KKB.email()||"").toLowerCase();
     R7={admins:low(d.admins),staff:low(d.staff),owner:String(d.owner||"").toLowerCase(),me:me,seen:{},dirty:false};
     if(!R7.owner&&me&&R7.admins.indexOf(me)<0)R7.owner=me;
     r[1].docs.forEach(function(x){var v=x.data()||{},e=String(v.email||"").toLowerCase();if(e&&(!R7.seen[e]||(v.at||"")>(R7.seen[e].at||"")))R7.seen[e]={name:v.name,at:v.at}});
     r7draw()},function(){$("#d7_sum").textContent="Không tải được danh sách tài khoản (cần quyền quản trị).";})});
-function r7count(){if(!window.KKB)return;KKB.fs.doc("config/roles").onSnapshot(function(x){var d=x.exists?(x.data()||{}):{};$("#sideAccN").textContent=String((d.staff||[]).length+(d.admins||[]).length+1)},function(){})}
+function r7count(){if(!window.KKB)return;KKB.fs.doc("bk_roles/main").onSnapshot(function(x){var d=x.exists?(x.data()||{}):{};$("#sideAccN").textContent=String((d.staff||[]).length+(d.admins||[]).length+1)},function(){})}
 $("#sideAcc").addEventListener("click",function(){$("#btnAcc").click()});
 $("#sideData").addEventListener("click",function(){$("#btnData").click()});
 $("#d7_add").addEventListener("click",r7add);
@@ -905,7 +905,7 @@ $("#d7_new").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preven
 $("#d7_cancel").addEventListener("click",function(){$("#dlg7").close()});
 $("#dlgf7").addEventListener("submit",function(e){e.preventDefault();if(!R7||!R7.dirty)return;var b=$("#d7_ok");b.disabled=true;b.textContent="Đang lưu…";
   var doc={staff:R7.staff,admins:R7.admins,at:new Date().toISOString(),by:S.uid||""};if(R7.owner)doc.owner=R7.owner;
-  KKB.fs.doc("config/roles").set(doc).then(function(){$("#dlg7").close();toast("Đã lưu: "+R7.staff.length+" nhân viên, "+R7.admins.length+" quản trị thêm")},function(){$("#d7_err").textContent="Không lưu được (chỉ quản trị chính mới được sửa danh sách). Thử lại sau."}).then(function(){b.textContent="Lưu thay đổi";if(R7.dirty)b.disabled=false})});
+  KKB.fs.doc("bk_roles/main").set(doc).then(function(){$("#dlg7").close();toast("Đã lưu: "+R7.staff.length+" nhân viên, "+R7.admins.length+" quản trị thêm")},function(){$("#d7_err").textContent="Không lưu được (cần quyền quản trị). Thử lại sau."}).then(function(){b.textContent="Lưu thay đổi";if(R7.dirty)b.disabled=false})});
 
 Promise.all([claude.use("db"),claude.use("user")]).then(function(r){
   S.db=r[0];S.user=r[1];window.__ap&&__ap("db");
