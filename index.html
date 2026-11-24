@@ -1207,7 +1207,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
         var rs = rows(), nS = staff.length, nA = admins.length + (owner ? 1 : 0);
         var body = rs.map(function (e, i) {
           var u = seen[e] || {}, role = roleOf(e), cell;
-          if (role === 'owner') cell = '<span class="badge app">Quản trị chính</span>';
+          if (role === 'owner') cell = '<span class="badge good">Quản trị chính</span>';
           else cell = sel(e, role);
           var name = u.name && String(u.name).toLowerCase() !== e ? esc(u.name) : '';
           return '<tr' + (role === 'none' ? ' style="opacity:.6"' : '') + '><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + cell + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td></tr>';
