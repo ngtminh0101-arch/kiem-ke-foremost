@@ -1185,8 +1185,8 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var admins = low(r.admins), staff = low(r.staff);
       var owner = (r.owner || '').toLowerCase();
       if (S.OWNER && me && admins.indexOf(me) < 0) owner = me;
-      var seen = {};
-      res[1].docs.forEach(function (d) { var x = d.data() || {}; var e = (x.email || '').toLowerCase(); if (e && (!seen[e] || (x.at || '') > (seen[e].at || ''))) seen[e] = { name: x.name, at: x.at }; });
+      var seen = {}, ids = {}, removed = {};
+      res[1].docs.forEach(function (d) { var x = d.data() || {}; var e = (x.email || '').toLowerCase(); if (e) (ids[e] = ids[e] || []).push(d.id); if (e && (!seen[e] || (x.at || '') > (seen[e].at || ''))) seen[e] = { name: x.name, at: x.at }; });
       var dirty = false;
       function roleOf(e) { return e === owner ? 'owner' : admins.indexOf(e) >= 0 ? 'admin' : staff.indexOf(e) >= 0 ? 'staff' : 'none'; }
       function setRole(e, role) {
@@ -1195,7 +1195,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
         dirty = true;
       }
       function rows() {
-        var list = {}; [owner].concat(admins, staff, Object.keys(seen)).forEach(function (e) { if (e) list[e] = 1; });
+        var list = {}; [owner].concat(admins, staff, Object.keys(seen)).forEach(function (e) { if (e && !removed[e]) list[e] = 1; });
         var rk = { owner: 0, admin: 1, staff: 2, none: 3 };
         return Object.keys(list).sort(function (x, y) { return rk[roleOf(x)] - rk[roleOf(y)] || x.localeCompare(y); });
       }
@@ -1210,21 +1210,22 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
           if (role === 'owner') cell = '<span class="badge good">Quản trị chính</span>';
           else cell = sel(e, role);
           var name = u.name && String(u.name).toLowerCase() !== e ? esc(u.name) : '';
-          return '<tr' + (role === 'none' ? ' style="opacity:.6"' : '') + '><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + cell + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td></tr>';
+          return '<tr' + (role === 'none' ? ' style="opacity:.6"' : '') + '><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + cell + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td><td style="text-align:center">' + (role === 'owner' || e === me ? '' : '<button class="btn" type="button" data-del="' + esc(e) + '" aria-label="Xóa ' + esc(e) + '" title="Xóa khỏi danh sách" style="min-height:34px;padding:0 10px;color:var(--bad)">Xóa</button>') + '</td></tr>';
         }).join('');
         modal(T + '<p class="muted small" style="margin:0 0 10px">' + nA + ' quản trị, ' + nS + ' nhân viên. Chỉ Gmail có trong bảng mới mở được app. Quản trị xem số sổ, duyệt đợt và sửa danh mục; nhân viên chỉ đếm và nộp.</p>' +
-          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px"><table class="kk" style="min-width:560px"><thead><tr><th style="width:36px;text-align:right">STT</th><th>Gmail</th><th>Vai trò</th><th>Lần vào gần nhất</th></tr></thead><tbody>' +
-          (body || '<tr><td colspan="4" class="muted">Chưa có tài khoản nào.</td></tr>') + '</tbody></table></div>' +
+          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px"><table class="kk" style="min-width:620px"><thead><tr><th style="width:36px;text-align:right">STT</th><th>Gmail</th><th>Vai trò</th><th>Lần vào gần nhất</th><th style="width:60px"></th></tr></thead><tbody>' +
+          (body || '<tr><td colspan="5" class="muted">Chưa có tài khoản nào.</td></tr>') + '</tbody></table></div>' +
           '<label class="f" for="rNew">Thêm Gmail (dán nhiều địa chỉ cách nhau bằng dấu phẩy cũng được)</label><div class="row" style="gap:8px;flex-wrap:nowrap"><input id="rNew" type="email" placeholder="nhanvien1@gmail.com" style="flex:1;min-width:0"><select id="rNewRole" aria-label="Vai trò" style="width:auto"><option value="staff">Nhân viên</option><option value="admin">Quản trị thêm</option></select><button class="btn" id="rAddBtn">Thêm</button></div>' +
           '<div id="rErr" class="small" role="alert" style="color:var(--bad);margin-top:6px;min-height:20px"></div>' +
-          '<p class="muted small" style="margin:0">Chọn <i>Không có quyền</i> để chặn một người; người đó không mở được app nữa sau khi bấm Lưu.</p>' +
+          '<p class="muted small" style="margin:0">Bấm <b>Xóa</b> để bỏ hẳn một Gmail khỏi danh sách, hoặc chọn <i>Không có quyền</i> để chặn. Thay đổi có hiệu lực sau khi bấm Lưu.</p>' +
           '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="rCancel">' + (dirty ? 'Hủy thay đổi' : 'Đóng') + '</button><button class="btn pri" id="rOk"' + (dirty ? '' : ' disabled') + '>Lưu thay đổi</button></div>');
         var card = document.querySelector('#modal .card'); if (card) card.style.maxWidth = '720px';
+        document.querySelectorAll('#modal [data-del]').forEach(function (b) { b.onclick = function () { var e = b.getAttribute('data-del'); setRole(e, 'none'); removed[e] = 1; draw(); }; });
         document.querySelectorAll('#modal [data-role]').forEach(function (s) { s.onchange = function () { setRole(s.getAttribute('data-role'), s.value); draw(); }; });
         function addNew() {
           var v = parseEmails($('rNew').value), role = $('rNewRole').value;
           if (v.bad.length || !v.list.length) { $('rErr').textContent = v.bad.length ? 'Email chưa đúng: ' + v.bad.join(', ') : 'Nhập Gmail cần thêm.'; return; }
-          v.list.forEach(function (e) { if (e !== owner) setRole(e, role); });
+          v.list.forEach(function (e) { if (e !== owner) { delete removed[e]; setRole(e, role); } });
           draw();
         }
         $('rAddBtn').onclick = addNew;
@@ -1234,6 +1235,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
           $('rOk').disabled = true;
           var doc = { staff: staff, admins: admins, at: iso(), by: myId() }; if (owner) doc.owner = owner;
           S.db.doc('config/roles').set(doc)
+            .then(function () { var gone = []; Object.keys(removed).forEach(function (e) { (ids[e] || []).forEach(function (id) { gone.push(S.db.doc('users/' + id).delete()); }); }); return Promise.all(gone); })
             .then(function () { closeModal(); toast('Đã lưu: ' + staff.length + ' nhân viên, ' + admins.length + ' quản trị thêm'); })
             .catch(function (e) { var b = $('rOk'); if (b) b.disabled = false; fail(e); });
         };
