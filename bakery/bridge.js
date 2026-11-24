@@ -49,7 +49,8 @@
   var auth = firebase.auth(), fs = firebase.firestore();
   var EMU = /(^|[?&])emu=1(&|$)/.test(location.search.slice(1)) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   if (EMU) { auth.useEmulator('http://127.0.0.1:9099'); fs.useEmulator('127.0.0.1', 8080); }
-  else { try { fs.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (e) {} }
+  // Không bật lưu đệm IndexedDB: cùng tên miền với app Foremost nên dùng chung một kho, ảnh (bk_ph) làm kho phình to
+  // và khởi động chờ khoá nhiều tab tới ~20 giây. Bỏ đi thì kiểm tra quyền chỉ còn vài trăm mili giây.
 
   var resolveReady, ready = new Promise(function (r) { resolveReady = r; });
   var st = { user: null, admin: false, started: false };
