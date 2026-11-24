@@ -31,19 +31,16 @@
   var IN_APP = /Zalo|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Line\/|MicroMessenger|TikTok|; wv\)/i.test(UA);
   if (/iPhone|iPad|iPod/i.test(UA) && !/Safari\//.test(UA)) IN_APP = true;
   var IOS = /iPhone|iPad|iPod/i.test(UA);
-  var HOME = 'https://' + cfg.authDomain + '/bakery/';
+  var HOME = 'https://kiemke-bakery.web.app/';
   var ESCAPE = IOS ? 'x-safari-' + HOME
-    : 'intent://' + cfg.authDomain + '/bakery/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(HOME) + ';end';
+    : 'intent://kiemke-bakery.web.app/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(HOME) + ';end';
   if (IN_APP) {
     try {
       if (!sessionStorage.getItem('kkbEsc')) { sessionStorage.setItem('kkbEsc', '1'); setTimeout(function () { location.href = ESCAPE; }, 150); }
     } catch (e) {}
   }
-  // Điện thoại đăng nhập ổn định nhất khi trang và trang đăng nhập cùng một tên miền
-  if (MOBILE && !IN_APP && location.hostname !== cfg.authDomain && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
-    location.replace(HOME + location.search + location.hash);
-    return;
-  }
+  // Trang riêng kiemke-bakery.web.app khác tên miền đăng nhập (authDomain) nên điện thoại cũng dùng cửa sổ bật lên
+  // (không bị trình duyệt chặn lưu trữ bên thứ ba như cách chuyển hướng); bị chặn cửa sổ thì mới chuyển hướng.
 
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), fs = firebase.firestore();
@@ -100,7 +97,6 @@
       b.disabled = true;
       var p = new firebase.auth.GoogleAuthProvider();
       p.setCustomParameters({ prompt: 'select_account' });
-      if (MOBILE) { auth.signInWithRedirect(p).catch(function (e) { showLogin(errText(e)); }); return; }
       auth.signInWithPopup(p).catch(function (e) {
         var code = e && e.code || '';
         if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/web-storage-unsupported') return auth.signInWithRedirect(p);
