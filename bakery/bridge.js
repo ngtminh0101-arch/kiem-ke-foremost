@@ -27,7 +27,6 @@
   }
 
   var UA = navigator.userAgent || '';
-  var MOBILE = /Android|iPhone|iPad|iPod/i.test(UA);
   var IN_APP = /Zalo|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Line\/|MicroMessenger|TikTok|; wv\)/i.test(UA);
   if (/iPhone|iPad|iPod/i.test(UA) && !/Safari\//.test(UA)) IN_APP = true;
   var IOS = /iPhone|iPad|iPod/i.test(UA);
@@ -233,7 +232,6 @@
 
   var userApi = {
     me: function () { var u = st.user; return Promise.resolve(u ? { id: u.uid, name: u.displayName || u.email, email: u.email, avatarUrl: u.photoURL || '' } : null); },
-    can: function () { return Promise.resolve(true); },
     canEdit: function () { return st.admin; },
     profiles: function (ids) {
       return Promise.all(ids.map(function (id) {
@@ -253,7 +251,7 @@
   };
 
   window.KKB = {
-    fs: fs, firebase: firebase,
+    fs: fs,
     isAdmin: function () { return st.admin; },
     email: function () { return st.user && st.user.email || ''; },
     signOut: function () { return auth.signOut(); }
