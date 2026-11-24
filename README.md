@@ -1,9 +1,10 @@
 # Kiểm kê Foremost
 
-App kiểm kê tài sản và nguyên liệu cho 3 cửa hàng Foremost VN (Mỹ Đình, Huỳnh Thúc Kháng, Aeon Hà Đông).
+Web app kiểm kê tài sản, nguyên liệu, bao bì cho 3 cửa hàng Foremost VN.
 
-- Link: https://ngtminh0101-arch.github.io/kiem-ke-foremost/
-- Dữ liệu và đăng nhập: Firebase (dự án `kiemke-foremost`, Firestore + đăng nhập Google).
-- `config.js`: cấu hình web của Firebase (được phép công khai).
-- Quy tắc bảo mật Firestore nằm trong Firebase Console (Firestore → Rules), không nằm trong kho này.
-- Quản trị thêm người dùng trong app: mục **Tài khoản được phép**.
+- Giao diện: `index.html` (chạy trên GitHub Pages)
+- Dữ liệu và đăng nhập: Supabase (`config.js`, `supabase-bridge.js`)
+- Cài cơ sở dữ liệu: chạy `supabase.sql` trong Supabase SQL Editor (thay email quản trị trước khi chạy)
+- `supabase.js`: thư viện Supabase JS 2.117.3, đặt sẵn để không phụ thuộc CDN
+
+© 2026 Phần mềm thuộc quyền sở hữu của Nguyễn Tuấn Minh.

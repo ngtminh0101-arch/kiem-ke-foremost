@@ -337,11 +337,9 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
 <div id="toast" hidden></div>
 <button class="btn" id="toTop" type="button" aria-label="Về đầu trang" title="Về đầu trang" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="supabase.js"></script>
 <script src="config.js"></script>
-<script src="firebase-bridge.js"></script>
+<script src="supabase-bridge.js"></script>
 <script>
 (function () {
   'use strict';
@@ -418,7 +416,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
   function init() {
     wireStatic();
     var c = window.claude;
-    if (!c || !c.use) { fatal('Không tải được phần kết nối Firebase. Tải lại trang.'); return; }
+    if (!c || !c.use) { fatal('Không tải được phần kết nối dữ liệu. Tải lại trang.'); return; }
     Promise.all([c.use('db'), c.use('user'), c.use('downloads')]).then(function (r) {
       S.db = r[0]; S.user = r[1]; S.downloads = r[2]; if (window.__ap) window.__ap('boot');
       if (!S.db) { fatal('Chưa kết nối được nơi lưu số liệu. Kiểm tra mạng rồi tải lại trang.'); return; }
@@ -488,14 +486,14 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     var v = $('view'); if (!S.db) return;
     setNavVis(false); $('btnSwitch').hidden = true; $('storeName').textContent = 'Chọn cửa hàng'; setSync('ok', 'Đã kết nối'); renderSide();
     if (!S.gateReady) { v.innerHTML = '<div class="card muted">Đang tải…</div>'; return; }
-    v.innerHTML = '<p class="small muted" style="margin:-6px 0 12px">Mỗi cửa hàng cần mật khẩu riêng do quản trị cấp.</p><div class="stores">' + STORES.map(function (st) {
+    v.innerHTML = '<p class="small muted" style="margin:-6px 0 12px">Mỗi cửa hàng cần mật khẩu riêng do quản trị cấp. <button class="link" id="btnMyPw" type="button" style="padding:0;min-height:0;font-size:inherit">Đổi mật khẩu đăng nhập</button></p><div class="stores">' + STORES.map(function (st) {
       var has = !!(S.gate[st.id] && S.gate[st.id].hash), open = S.OWNER || isUnlocked(st.id);
       var sub = S.OWNER ? (has ? 'Đã đặt mật khẩu' : 'Chưa đặt mật khẩu, nhân viên chưa mở được') : open ? 'Đã mở khóa trong phiên này' : has ? 'Cần mật khẩu' : 'Chưa mở, nhờ quản trị đặt mật khẩu';
       return '<button class="store' + (open && !S.OWNER ? ' open' : '') + '" data-store="' + st.id + '">' + ic('shop', 'shop') + '<span class="grow"><span class="nm">' + esc(st.name) + '</span><span class="st">' + esc(sub) + '</span></span>' + (open ? ic('chev', 'chev') : ic('lock', 'lk', 'Đang khóa')) + '</button>';
     }).join('') + '</div>' +
       (S.OWNER ? '<div class="card ownerbox"><b>Mật khẩu cửa hàng</b><p class="small muted" style="margin:4px 0 10px">Bạn là quản trị nên mở được mọi cửa hàng không cần mật khẩu. Nhân viên phải nhập mật khẩu của từng cửa hàng.</p><div class="row"><button class="btn" id="btnGate">Đặt mật khẩu</button><button class="btn" id="btnRoles">Tài khoản được phép</button><button class="btn" id="btnBackup">Sao lưu và nhập dữ liệu</button></div></div>' : '');
     Array.prototype.forEach.call(v.querySelectorAll('[data-store]'), function (b) { b.onclick = function () { askOpen(b.getAttribute('data-store')); }; });
-    var g = $('btnGate'); if (g) g.onclick = openGateEdit; if ((g = $('btnRoles'))) g.onclick = openRoles; if ((g = $('btnBackup'))) g.onclick = openBackup;
+    var g = $('btnGate'); if (g) g.onclick = openGateEdit; if ((g = $('btnRoles'))) g.onclick = openRoles; if ((g = $('btnBackup'))) g.onclick = openBackup; if ((g = $('btnMyPw'))) g.onclick = openMyPw;
   }
   function askOpen(id) {
     var st = storeById(id); if (!st) return;
@@ -662,7 +660,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       S.inflight[id] = false;
       var code = e && e.code;
       if (code === 'invalid_argument' || code === 'permission-denied') { S.RO = true; setSync('err', 'Không lưu được'); notice('Không lưu được vì tài khoản này chưa có quyền chỉnh sửa. Nhờ quản trị thêm email của bạn vào danh sách nhân viên, số vừa nhập chưa được lưu.', true); render(); return; }
-      if (code === 'quota_exceeded' || code === 'resource-exhausted') { setSync('err', 'Không lưu được'); notice('Đã vượt hạn mức miễn phí của Firebase trong ngày nên chưa lưu được. Báo quản trị.', true); return; }
+      if (code === 'quota_exceeded' || code === 'resource-exhausted') { setSync('err', 'Không lưu được'); notice('Đã vượt hạn mức miễn phí của Supabase trong ngày nên chưa lưu được. Báo quản trị.', true); return; }
       setSync('err', 'Chưa lưu được, đang thử lại');
       clearTimeout(S.timers[id]); S.timers[id] = setTimeout(function () { flushDoc(id); }, 4000);
     });
@@ -1165,7 +1163,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     }).catch(function () { toast('Không tạo được file PDF. Kiểm tra mạng rồi thử lại.'); });
   }
 
-  /* ---------- tài khoản được phép (Firebase) ---------- */
+  /* ---------- tài khoản được phép ---------- */
   function parseEmails(txt) {
     var out = [], bad = [];
     String(txt || '').split(/[\s,;]+/).forEach(function (x) {
@@ -1180,66 +1178,76 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     modal(T + '<div class="muted small">Đang tải…</div>');
     Promise.all([S.db.doc('config/roles').get(), S.db.collection('users').get()]).then(function (res) {
       var r = res[0].exists ? (res[0].data() || {}) : {};
-      var me = window.KK ? String(window.KK.email() || '').toLowerCase() : '';
-      function low(a) { return (a || []).map(function (e) { return String(e).toLowerCase(); }); }
-      var admins = low(r.admins), staff = low(r.staff);
+      var me = window.KK ? window.KK.email().toLowerCase() : '';
+      var admins = (r.admins || []).map(function (e) { return String(e).toLowerCase(); });
       var owner = (r.owner || '').toLowerCase();
-      if (S.OWNER && me && admins.indexOf(me) < 0) owner = me;
+      if (S.OWNER && me && admins.indexOf(me) < 0) owner = me; /* chỉ quản trị chính mới là quản trị mà không có trong danh sách */
       var seen = {};
       res[1].docs.forEach(function (d) { var x = d.data() || {}; var e = (x.email || '').toLowerCase(); if (e && (!seen[e] || (x.at || '') > (seen[e].at || ''))) seen[e] = { name: x.name, at: x.at }; });
       var dirty = false;
-      function roleOf(e) { return e === owner ? 'owner' : admins.indexOf(e) >= 0 ? 'admin' : staff.indexOf(e) >= 0 ? 'staff' : 'none'; }
-      function setRole(e, role) {
-        admins = admins.filter(function (x) { return x !== e; }); staff = staff.filter(function (x) { return x !== e; });
-        if (role === 'admin') admins.push(e); else if (role === 'staff') staff.push(e);
-        dirty = true;
-      }
       function rows() {
-        var list = {}; [owner].concat(admins, staff, Object.keys(seen)).forEach(function (e) { if (e) list[e] = 1; });
-        var rk = { owner: 0, admin: 1, staff: 2, none: 3 };
-        return Object.keys(list).sort(function (x, y) { return rk[roleOf(x)] - rk[roleOf(y)] || x.localeCompare(y); });
-      }
-      function sel(e, role) {
-        return '<select data-role="' + esc(e) + '" aria-label="Vai trò của ' + esc(e) + '" style="min-height:34px">' +
-          [['staff', 'Nhân viên'], ['admin', 'Quản trị thêm'], ['none', 'Không có quyền']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === role ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+        var list = {};
+        Object.keys(seen).forEach(function (e) { list[e] = 1; });
+        admins.forEach(function (e) { list[e] = 1; });
+        if (owner) list[owner] = 1;
+        function rank(e) { return e === owner ? 0 : admins.indexOf(e) >= 0 ? 1 : 2; }
+        return Object.keys(list).sort(function (x, y) { return rank(x) - rank(y) || x.localeCompare(y); });
       }
       function draw() {
-        var rs = rows(), nS = staff.length, nA = admins.length + (owner ? 1 : 0);
+        var rs = rows(), nA = admins.length + (owner ? 1 : 0);
         var body = rs.map(function (e, i) {
-          var u = seen[e] || {}, role = roleOf(e), cell;
-          if (role === 'owner') cell = '<span class="badge app">Quản trị chính</span>';
-          else cell = sel(e, role);
-          var name = u.name && String(u.name).toLowerCase() !== e ? esc(u.name) : '';
-          return '<tr' + (role === 'none' ? ' style="opacity:.6"' : '') + '><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + cell + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td></tr>';
+          var u = seen[e] || {}, role, act = '';
+          if (e === owner) role = '<span class="badge app">Quản trị chính</span>';
+          else if (admins.indexOf(e) >= 0) { role = '<span class="badge sub">Quản trị thêm</span>'; act = '<button class="btn danger" style="min-height:34px" data-rm="' + esc(e) + '">Bỏ quyền quản trị</button>'; }
+          else { role = 'Nhân viên'; act = '<button class="btn" style="min-height:34px" data-add="' + esc(e) + '">Cấp quyền quản trị</button>'; }
+          var name = u.name && u.name.toLowerCase() !== e ? esc(u.name) : '';
+          return '<tr><td style="text-align:right;color:var(--muted)">' + (i + 1) + '</td><td style="word-break:break-all">' + esc(e) + (e === me ? ' <span class="muted small">(bạn)</span>' : '') + (name ? '<div class="muted small">' + name + '</div>' : '') + '</td><td style="white-space:nowrap">' + role + '</td><td style="white-space:nowrap">' + (u.at ? esc(fmtTime(u.at)) : '<span class="muted">Chưa đăng nhập</span>') + '</td><td style="white-space:nowrap;text-align:right">' + act + '</td></tr>';
         }).join('');
-        modal(T + '<p class="muted small" style="margin:0 0 10px">' + nA + ' quản trị, ' + nS + ' nhân viên. Chỉ Gmail có trong bảng mới mở được app. Quản trị xem số sổ, duyệt đợt và sửa danh mục; nhân viên chỉ đếm và nộp.</p>' +
-          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px"><table class="kk" style="min-width:560px"><thead><tr><th style="width:36px;text-align:right">STT</th><th>Gmail</th><th>Vai trò</th><th>Lần vào gần nhất</th></tr></thead><tbody>' +
-          (body || '<tr><td colspan="4" class="muted">Chưa có tài khoản nào.</td></tr>') + '</tbody></table></div>' +
-          '<label class="f" for="rNew">Thêm Gmail (dán nhiều địa chỉ cách nhau bằng dấu phẩy cũng được)</label><div class="row" style="gap:8px;flex-wrap:nowrap"><input id="rNew" type="email" placeholder="nhanvien1@gmail.com" style="flex:1;min-width:0"><select id="rNewRole" aria-label="Vai trò" style="width:auto"><option value="staff">Nhân viên</option><option value="admin">Quản trị thêm</option></select><button class="btn" id="rAddBtn">Thêm</button></div>' +
+        modal(T + '<p class="muted small" style="margin:0 0 10px">' + rs.length + ' tài khoản, trong đó ' + nA + ' quản trị. Quản trị xem được số sổ, duyệt đợt và sửa danh mục. Nhân viên chỉ đếm và nộp.</p>' +
+          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px"><table class="kk" style="min-width:600px"><thead><tr><th style="width:36px;text-align:right">STT</th><th>Email</th><th>Vai trò</th><th>Lần vào gần nhất</th><th style="text-align:right">Thao tác</th></tr></thead><tbody>' +
+          (body || '<tr><td colspan="5" class="muted">Chưa có tài khoản nào đăng nhập.</td></tr>') + '</tbody></table></div>' +
+          '<label class="f" for="rNew">Thêm quản trị bằng email</label><div class="row" style="gap:8px;flex-wrap:nowrap"><input id="rNew" type="email" placeholder="quanly@gmail.com" style="flex:1;min-width:0"><button class="btn" id="rAddBtn">Thêm</button></div>' +
           '<div id="rErr" class="small" role="alert" style="color:var(--bad);margin-top:6px;min-height:20px"></div>' +
-          '<p class="muted small" style="margin:0">Chọn <i>Không có quyền</i> để chặn một người; người đó không mở được app nữa sau khi bấm Lưu.</p>' +
+          '<p class="muted small" style="margin:0">Bảng liệt kê những tài khoản đã đăng nhập app ít nhất một lần. Tạo hoặc xóa tài khoản nhân viên ở Supabase: Authentication → Users (khi tạo nhớ tích <i>Auto Confirm User</i>). Xóa ở đó là người đó mất quyền ngay.</p>' +
           '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="rCancel">' + (dirty ? 'Hủy thay đổi' : 'Đóng') + '</button><button class="btn pri" id="rOk"' + (dirty ? '' : ' disabled') + '>Lưu thay đổi</button></div>');
         var card = document.querySelector('#modal .card'); if (card) card.style.maxWidth = '720px';
-        document.querySelectorAll('#modal [data-role]').forEach(function (s) { s.onchange = function () { setRole(s.getAttribute('data-role'), s.value); draw(); }; });
+        document.querySelectorAll('#modal [data-rm]').forEach(function (b) { b.onclick = function () { admins = admins.filter(function (x) { return x !== b.getAttribute('data-rm'); }); dirty = true; draw(); }; });
+        document.querySelectorAll('#modal [data-add]').forEach(function (b) { b.onclick = function () { admins.push(b.getAttribute('data-add')); dirty = true; draw(); }; });
         function addNew() {
-          var v = parseEmails($('rNew').value), role = $('rNewRole').value;
-          if (v.bad.length || !v.list.length) { $('rErr').textContent = v.bad.length ? 'Email chưa đúng: ' + v.bad.join(', ') : 'Nhập Gmail cần thêm.'; return; }
-          v.list.forEach(function (e) { if (e !== owner) setRole(e, role); });
-          draw();
+          var v = parseEmails($('rNew').value);
+          if (v.bad.length || !v.list.length) { $('rErr').textContent = v.bad.length ? 'Email chưa đúng: ' + v.bad.join(', ') : 'Nhập email cần thêm.'; return; }
+          v.list.forEach(function (e) { e = e.toLowerCase(); if (e !== owner && admins.indexOf(e) < 0) admins.push(e); });
+          dirty = true; draw();
         }
         $('rAddBtn').onclick = addNew;
         $('rNew').onkeydown = function (ev) { if (ev.key === 'Enter') addNew(); };
         $('rCancel').onclick = closeModal;
         $('rOk').onclick = function () {
           $('rOk').disabled = true;
-          var doc = { staff: staff, admins: admins, at: iso(), by: myId() }; if (owner) doc.owner = owner;
+          var doc = { admins: admins, at: iso(), by: myId() }; if (owner) doc.owner = owner;
           S.db.doc('config/roles').set(doc)
-            .then(function () { closeModal(); toast('Đã lưu: ' + staff.length + ' nhân viên, ' + admins.length + ' quản trị thêm'); })
+            .then(function () { closeModal(); toast('Đã lưu: ' + admins.length + ' quản trị thêm'); })
             .catch(function (e) { var b = $('rOk'); if (b) b.disabled = false; fail(e); });
         };
       }
       draw();
     }).catch(function (e) { closeModal(); fail(e); });
+  }
+  function openMyPw() {
+    modal('<h2 style="margin:0 0 4px;font-size:18px">Đổi mật khẩu đăng nhập</h2><p class="muted small" style="margin:0">Mật khẩu của tài khoản ' + esc(window.KK ? window.KK.email() : '') + '. Đây không phải mật khẩu cửa hàng.</p>' +
+      '<label class="f" for="mp1">Mật khẩu mới (ít nhất 8 ký tự)</label><input type="password" id="mp1" autocomplete="new-password">' +
+      '<label class="f" for="mp2">Nhập lại mật khẩu mới</label><input type="password" id="mp2" autocomplete="new-password">' +
+      '<div id="mpErr" class="small" role="alert" style="color:var(--bad);margin-top:6px;min-height:20px"></div>' +
+      '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="mpCancel">Hủy</button><button class="btn pri" id="mpOk">Đổi mật khẩu</button></div>');
+    $('mpCancel').onclick = closeModal; $('mp1').focus();
+    $('mpOk').onclick = function () {
+      var a = $('mp1').value, b = $('mp2').value;
+      if (a.length < 8) { $('mpErr').textContent = 'Mật khẩu cần ít nhất 8 ký tự.'; return; }
+      if (a !== b) { $('mpErr').textContent = 'Hai lần nhập chưa giống nhau.'; return; }
+      $('mpOk').disabled = true;
+      window.KK.changePassword(a).then(function () { closeModal(); toast('Đã đổi mật khẩu đăng nhập'); })
+        .catch(function (e) { $('mpOk').disabled = false; $('mpErr').textContent = 'Không đổi được: ' + (e && e.message || e); });
+    };
   }
 
   /* ---------- sao lưu và nhập dữ liệu ---------- */

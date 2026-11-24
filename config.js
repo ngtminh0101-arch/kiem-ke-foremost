@@ -1,9 +1,11 @@
-/* Cấu hình Firebase của dự án kiemke-foremost (Project settings → Your apps → kiemke-web) */
-window.KK_FIREBASE_CONFIG = {
-  apiKey: "DAN_API_KEY_VAO_DAY",
-  authDomain: "kiemke-foremost.firebaseapp.com",
-  projectId: "kiemke-foremost",
-  storageBucket: "kiemke-foremost.firebasestorage.app",
-  messagingSenderId: "876987695554",
-  appId: "1:876987695554:web:a5c0d7fd4a44599555d65b"
+/*
+ * CẤU HÌNH SUPABASE
+ * Lấy trong Supabase: Project Settings → API Keys.
+ *  - url: https://<mã dự án>.supabase.co
+ *  - anonKey: khóa "Publishable key" (sb_publishable_...) hoặc khóa legacy "anon public".
+ *    KHÔNG dùng khóa secret / service_role.
+ */
+window.KK_SUPABASE = {
+  url: "https://evmjndhvbvxfobdjzhem.supabase.co",
+  anonKey: "sb_publishable_uPfb1cTUGpmn-PaIYWTB-A_G2QcbS0X"
 };
