@@ -347,7 +347,20 @@ body.gate .side .navsec,body.gate .seg-m{display:none!important}
 .gatebox input[type=email],.gatebox input[type=password]{width:100%;min-height:44px;border:1px solid var(--line2);border-radius:8px;background:var(--card);padding:0 12px;font-size:16px;margin:4px 0 8px;box-shadow:var(--sh-field)}
 .gatebox .lbl{font-size:12.5px;color:var(--ink2)}
 .gatebox a.btn{display:flex;min-height:44px}
-#btnData{min-height:36px;padding:0 10px;font-size:13px}
+#btnData,#btnAcc{min-height:36px;padding:0 10px;font-size:13px}
+#dlg7{width:min(94vw,640px)}
+.acct{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+.acct table{width:100%;border-collapse:collapse;font-size:13.5px}
+.acct td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+.acct tr:first-child td{border-top:0}
+.acct .em{word-break:break-all}
+.acct .sub{font-size:12px;color:var(--ink2)}
+.acct select{width:auto;min-height:36px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);padding:0 8px;font-size:14px}
+.acct tr.off{opacity:.55}
+.addrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:520px){.acl{display:none}.addrow input#d7_new{flex:1 1 100%}}
+.addrow input{flex:1;min-width:0;min-height:42px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);padding:0 12px;font-size:16px}
+.addrow select{flex:none;width:auto;min-height:42px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);padding:0 8px;font-size:14px}
 
 </style>
 <div id="apboot" role="progressbar" aria-label="Đang mở ứng dụng" aria-valuemin="0" aria-valuemax="100" aria-valuenow="3"><div class="lg"></div><div class="nm">KIỂM KÊ BAKERY</div><div class="co">CÔNG TY TNHH FOREMOST VN</div><div class="bar"><i id="apboot-i"></i></div><div class="st"><span id="apboot-s">Đang mở ứng dụng…</span><b id="apboot-p">3%</b></div><div class="own">© 2026 Phần mềm thuộc quyền sở hữu<br>của Nguyễn Tuấn Minh</div></div>
@@ -378,7 +391,7 @@ window.__apDone=function(){fin=true};tick()})();</script>
       <div class="brand"><div class="l1"><span class="ttl">Kiểm kê Bakery</span><span class="vr" aria-hidden="true"></span><span class="co">CÔNG TY TNHH FOREMOST VN</span></div></div>
       <span class="sync" id="sync">Đang kết nối</span>
       <div class="who" id="who"></div>
-      <button class="btn" id="btnData" type="button" hidden>⚙ Dữ liệu</button><button class="btn iconbtn" id="btnOut" type="button" aria-label="Đăng xuất" title="Đăng xuất" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg></button><button class="btn iconbtn" id="btnTheme" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      <button class="btn" id="btnAcc" type="button" title="Tài khoản được phép" aria-label="Tài khoản được phép" hidden>👥<span class="acl"> Tài khoản</span></button><button class="btn" id="btnData" type="button" hidden>⚙ Dữ liệu</button><button class="btn iconbtn" id="btnOut" type="button" aria-label="Đăng xuất" title="Đăng xuất" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg></button><button class="btn iconbtn" id="btnTheme" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
       <button class="hdtop" type="button" data-top aria-label="Lên đầu trang" title="Lên đầu trang">▲</button>
     </header>
     <main class="content">
@@ -440,6 +453,16 @@ window.__apDone=function(){fin=true};tick()})();</script>
   <label class="chk" id="d6_cw" hidden><input type="checkbox" id="d6_c"> Nhập cả số đếm trong file (ghi đè số đếm cùng tài khoản)</label>
   <div class="err" id="d6_err"></div>
   <div class="acts"><button class="btn" type="button" id="d6_cancel">Đóng</button><button class="btn pri" type="submit" id="d6_ok" disabled>Nhập dữ liệu</button></div>
+</form></dialog>
+<dialog id="dlg7"><form method="dialog" id="dlgf7" novalidate>
+  <h3>Tài khoản được phép</h3>
+  <div class="note" style="margin-bottom:10px" id="d7_sum">Đang tải…</div>
+  <div class="acct" id="d7_list"></div>
+  <label class="fl" for="d7_new">Thêm Gmail (dán nhiều địa chỉ, cách nhau bằng dấu phẩy cũng được)</label>
+  <div class="addrow"><input id="d7_new" type="email" inputmode="email" autocomplete="off" placeholder="nhanvien1@gmail.com"><select id="d7_role" aria-label="Vai trò"><option value="staff">Nhân viên</option><option value="admin">Quản trị thêm</option></select><button class="btn" type="button" id="d7_add">Thêm</button></div>
+  <div class="err" id="d7_err" role="alert"></div>
+  <div class="sm2">Danh sách này dùng chung với app Kiểm kê Foremost. Chọn <i>Không có quyền</i> để chặn một người.</div>
+  <div class="acts"><button class="btn" type="button" id="d7_cancel">Đóng</button><button class="btn pri" type="submit" id="d7_ok" disabled>Lưu thay đổi</button></div>
 </form></dialog>
 <div id="pdfpages" aria-hidden="true"></div>
 <button class="fab" id="top" type="button" aria-label="Lên đầu trang" title="Lên đầu trang">▲</button>
@@ -843,13 +866,45 @@ $("#dlgf6").addEventListener("submit",function(e){e.preventDefault();if(!imp)ret
   if($("#d6_c").checked)Object.keys(imp.c).forEach(function(u){var d=imp.c[u];if(d&&typeof d==="object")w.push(S.db.doc("c/"+u).set(d))});
   Promise.all(w).then(function(){$("#dlg6").close();toast("Đã nhập dữ liệu")},function(){$("#d6_err").textContent="Không nhập được (cần quyền quản trị), thử lại."}).then(function(){b.disabled=false;b.textContent="Nhập dữ liệu"})});
 
+
+/* ===== Tài khoản được phép (dùng chung config/roles với Foremost) ===== */
+var R7=null;
+function r7role(e){return e===R7.owner?"owner":R7.admins.indexOf(e)>=0?"admin":R7.staff.indexOf(e)>=0?"staff":"none"}
+function r7set(e,role){R7.admins=R7.admins.filter(function(x){return x!==e});R7.staff=R7.staff.filter(function(x){return x!==e});if(role==="admin")R7.admins.push(e);else if(role==="staff")R7.staff.push(e);R7.dirty=true;r7draw()}
+function r7draw(){var l={};[R7.owner].concat(R7.admins,R7.staff,Object.keys(R7.seen)).forEach(function(e){if(e)l[e]=1});
+  var rk={owner:0,admin:1,staff:2,none:3},rows=Object.keys(l).sort(function(a,b){return rk[r7role(a)]-rk[r7role(b)]||a.localeCompare(b)});
+  $("#d7_sum").textContent=(R7.admins.length+(R7.owner?1:0))+" quản trị, "+R7.staff.length+" nhân viên. Chỉ Gmail có trong danh sách mới mở được app.";
+  $("#d7_list").innerHTML='<table>'+rows.map(function(e){var u=R7.seen[e]||{},r=r7role(e);
+    var nm=u.name&&String(u.name).toLowerCase()!==e?'<div class="sub">'+esc(u.name)+'</div>':'';
+    var at=u.at?'<div class="sub">Vào gần nhất: '+esc(new Date(u.at).toLocaleString("vi-VN"))+'</div>':'<div class="sub">Chưa đăng nhập</div>';
+    var cell=r==="owner"?'<b style="font-size:12.5px">Quản trị chính</b>':'<select data-e="'+esc(e)+'" aria-label="Vai trò của '+esc(e)+'">'+[["staff","Nhân viên"],["admin","Quản trị thêm"],["none","Không có quyền"]].map(function(o){return'<option value="'+o[0]+'"'+(o[0]===r?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select>';
+    return'<tr'+(r==="none"?' class="off"':'')+'><td class="em">'+esc(e)+(e===R7.me?' <span class="sub" style="white-space:nowrap">(bạn)</span>':'')+nm+at+'</td><td style="text-align:right;white-space:nowrap">'+cell+'</td></tr>'}).join("")+'</table>';
+  $("#d7_list").querySelectorAll("select[data-e]").forEach(function(x){x.onchange=function(){r7set(x.getAttribute("data-e"),x.value)}});
+  $("#d7_ok").disabled=!R7.dirty;$("#d7_cancel").textContent=R7.dirty?"Huỷ thay đổi":"Đóng"}
+function r7add(){var bad=[],ok=[];String($("#d7_new").value||"").split(/[\s,;]+/).forEach(function(x){x=x.trim().toLowerCase();if(!x)return;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x))bad.push(x);else if(ok.indexOf(x)<0)ok.push(x)});
+  if(bad.length||!ok.length){$("#d7_err").textContent=bad.length?"Email chưa đúng: "+bad.join(", "):"Nhập Gmail cần thêm.";return}
+  $("#d7_err").textContent="";var role=$("#d7_role").value;ok.forEach(function(e){if(e!==R7.owner)r7set(e,role)});$("#d7_new").value=""}
+$("#btnAcc").addEventListener("click",function(){if(!window.KKB)return;var fs=KKB.fs;$("#d7_err").textContent="";$("#d7_new").value="";$("#d7_list").innerHTML="";$("#d7_sum").textContent="Đang tải…";$("#d7_ok").disabled=true;$("#dlg7").showModal();
+  Promise.all([fs.doc("config/roles").get(),fs.collection("users").get().catch(function(){return{docs:[]}})]).then(function(r){var d=r[0].exists?(r[0].data()||{}):{};
+    var low=function(a){return(a||[]).map(function(x){return String(x).toLowerCase()})},me=String(KKB.email()||"").toLowerCase();
+    R7={admins:low(d.admins),staff:low(d.staff),owner:String(d.owner||"").toLowerCase(),me:me,seen:{},dirty:false};
+    if(!R7.owner&&me&&R7.admins.indexOf(me)<0)R7.owner=me;
+    r[1].docs.forEach(function(x){var v=x.data()||{},e=String(v.email||"").toLowerCase();if(e&&(!R7.seen[e]||(v.at||"")>(R7.seen[e].at||"")))R7.seen[e]={name:v.name,at:v.at}});
+    r7draw()},function(){$("#d7_sum").textContent="Không tải được danh sách tài khoản (cần quyền quản trị).";})});
+$("#d7_add").addEventListener("click",r7add);
+$("#d7_new").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();r7add()}});
+$("#d7_cancel").addEventListener("click",function(){$("#dlg7").close()});
+$("#dlgf7").addEventListener("submit",function(e){e.preventDefault();if(!R7||!R7.dirty)return;var b=$("#d7_ok");b.disabled=true;b.textContent="Đang lưu…";
+  var doc={staff:R7.staff,admins:R7.admins,at:new Date().toISOString(),by:S.uid||""};if(R7.owner)doc.owner=R7.owner;
+  KKB.fs.doc("config/roles").set(doc).then(function(){$("#dlg7").close();toast("Đã lưu: "+R7.staff.length+" nhân viên, "+R7.admins.length+" quản trị thêm")},function(){$("#d7_err").textContent="Không lưu được (chỉ quản trị chính mới được sửa danh sách). Thử lại sau."}).then(function(){b.textContent="Lưu thay đổi";if(R7.dirty)b.disabled=false})});
+
 Promise.all([claude.use("db"),claude.use("user")]).then(function(r){
   S.db=r[0];S.user=r[1];window.__ap&&__ap("db");
   if(!S.db){window.__apDone&&__apDone();setSync("err","Mất kết nối");$("#nodb").classList.remove("hide");$("#list").innerHTML='<div class="empty">Không tải được danh mục vì trang chưa kết nối dữ liệu.</div>';return}
   var u=S.user;
   (u?u.me():Promise.resolve(null)).then(function(me){
     if(me){S.uid=me.id;S.meName=me.name||"";$("#who").innerHTML=(me.avatarUrl?'<img alt="" referrerpolicy="no-referrer">':'')+'<span></span>';if(me.avatarUrl)$("#who img").src=me.avatarUrl;$("#who span").textContent=me.name||"Bạn"}
-    $("#btnOut").hidden=false;if(window.KKB&&KKB.isAdmin())$("#btnData").hidden=false;
+    $("#btnOut").hidden=false;if(window.KKB&&KKB.isAdmin()){$("#btnData").hidden=false;$("#btnAcc").hidden=false}
     if(!S.uid){S.canWrite=false;$("#ro").textContent="Không xác định được tài khoản của bạn nên chưa nhập số được. Hãy đăng nhập lại rồi mở lại trang.";$("#ro").classList.remove("hide")}
     var cw=u&&u.can?u.can("data.write"):null;Promise.resolve(cw).then(function(ok){if(ok===false){S.canWrite=false;$("#ro").classList.remove("hide");$("#addcode").disabled=true;build(true)}});
     S.db.doc("cfg/main").onSnapshot(function(s){window.__ap&&__ap("cfg");S.cfg=s.exists?s.data():{};fillKy();build()},function(){});
