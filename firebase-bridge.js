@@ -80,7 +80,7 @@
       '<div class="card" style="max-width:460px"><h2 style="margin:0 0 6px;font-size:18px">Đăng nhập để kiểm kê</h2>' +
       '<p class="muted" style="margin:0 0 14px">Dùng tài khoản Google (Gmail) đã được quản trị cấp quyền.</p>' +
       '<button class="btn pri" id="kkLogin" type="button" style="width:100%">Đăng nhập bằng Google</button>' +
-      (err ? '<p class="small" role="alert" style="color:var(--bad);margin:10px 0 0">' + esc(err) + '</p>' : '') + '</div>');
+      '<p class="muted small" style="margin:10px 0 0;font-size:11px">Bản 24/11 b</p>' + (err ? '<p class="small" role="alert" style="color:var(--bad);margin:10px 0 0">' + esc(err) + '</p>' : '') + '</div>');
     var b = $('kkLogin');
     if (b) b.onclick = function () {
       b.disabled = true;
