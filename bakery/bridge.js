@@ -1,6 +1,6 @@
 /*
  * Cầu nối Firebase cho app Kiểm kê Bakery.
- * - Đăng nhập bằng Google, hoặc Gmail + mật khẩu (giống app Kiểm kê Foremost, dùng chung danh sách tài khoản).
+ * - Đăng nhập bằng Google, hoặc Gmail + mật khẩu (danh sách tài khoản riêng của Bakery: bk_roles/main).
  * - Dữ liệu nằm trên Cloud Firestore, các bộ sưu tập bắt đầu bằng "bk_".
  * - Cung cấp cho app các hàm db / user / assets / downloads.
  */
@@ -90,7 +90,7 @@
     screen('Đăng nhập',
       '<div class="pnl gatebox"><h2 style="margin:0;font-size:18px">Đăng nhập để kiểm kê</h2>' +
       (IN_APP ? '<p class="note" style="margin:0">Google không cho đăng nhập Google ngay trong Zalo, Messenger, Facebook.</p>' + open
-              : '<p class="note" style="margin:0">Dùng tài khoản Google (Gmail) đã được quản trị cấp quyền, giống app Kiểm kê Foremost.</p>' + google) +
+              : '<p class="note" style="margin:0">Dùng tài khoản Google (Gmail) đã được quản trị app Bakery cấp quyền.</p>' + google) +
       pw +
       (info ? '<p class="note" role="status" style="color:var(--jade);margin:0">' + esc(info) + '</p>' : '') +
       (err ? '<p class="note bad" role="alert" style="margin:0">' + esc(err) + '</p>' : '') + '</div>');
@@ -143,7 +143,7 @@
   function showDenied(u) {
     screen('Chưa được cấp quyền',
       '<div class="pnl gatebox"><h2 style="margin:0;font-size:18px">Tài khoản chưa được cấp quyền</h2>' +
-      '<p style="margin:0">Bạn đang đăng nhập bằng <b>' + esc(u.email || '(không có email)') + '</b>. Gửi địa chỉ email này cho quản trị để được thêm vào danh sách (mục Tài khoản được phép trong app Kiểm kê Foremost), rồi tải lại trang.</p>' +
+      '<p style="margin:0">Bạn đang đăng nhập bằng <b>' + esc(u.email || '(không có email)') + '</b>. Gửi địa chỉ email này cho quản trị để được thêm vào danh sách (mục Tài khoản được phép trong app Kiểm kê Bakery), rồi tải lại trang.</p>' +
       '<div class="row"><button class="btn pri" type="button" onclick="location.reload()">Tải lại</button><button class="btn" type="button" id="kkOut2">Đăng nhập tài khoản khác</button></div></div>');
     $('kkOut2').onclick = function () { auth.signOut(); };
   }
@@ -156,10 +156,10 @@
     if (!u) { showLogin(); return; }
     if (!u.emailVerified) { showVerify(u); return; }
     screen('Đang kiểm tra quyền…', '<div class="pnl note">Đang kiểm tra quyền của tài khoản…</div>');
-    Promise.all([canRead('config/roles'), canRead('bk_cfg/main')]).then(function (r) {
+    Promise.all([canRead('bk_roles/main'), canRead('bk_cfg/main')]).then(function (r) {
       if (!r[1]) { showDenied(u); return; }
       st.admin = r[0]; st.started = true;
-      fs.doc('users/' + u.uid).set({ name: u.displayName || u.email || 'Nhân viên', email: (u.email || '').toLowerCase(), at: new Date().toISOString() }, { merge: true }).catch(function () {});
+      fs.doc('bk_users/' + u.uid).set({ name: u.displayName || u.email || 'Nhân viên', email: (u.email || '').toLowerCase(), at: new Date().toISOString() }, { merge: true }).catch(function () {});
       unscreen();
       resolveReady();
     }).catch(function (e) {
@@ -240,7 +240,7 @@
     canEdit: function () { return st.admin; },
     profiles: function (ids) {
       return Promise.all(ids.map(function (id) {
-        return fs.doc('users/' + id).get().then(function (s) { return [id, s.exists ? s.data() : null]; }, function () { return [id, null]; });
+        return fs.doc('bk_users/' + id).get().then(function (s) { return [id, s.exists ? s.data() : null]; }, function () { return [id, null]; });
       })).then(function (rows) { var m = {}; rows.forEach(function (r) { if (r[1]) m[r[0]] = r[1]; }); return m; });
     }
   };
