@@ -30,6 +30,30 @@
     return;
   }
 
+  // Điện thoại: mở link trong Zalo/Messenger/Facebook thì Google chặn đăng nhập
+  var UA = navigator.userAgent || '';
+  var MOBILE = /Android|iPhone|iPad|iPod/i.test(UA);
+  var IN_APP = /Zalo|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Line\/|MicroMessenger|TikTok|; wv\)/i.test(UA);
+  var HOME = 'https://' + cfg.authDomain + '/';
+  if (IN_APP) {
+    window.claude = { use: function () { return pending; } };
+    screen('Mở bằng trình duyệt', '<div class="card" style="max-width:460px"><h2 style="margin:0 0 6px;font-size:18px">Hãy mở app bằng trình duyệt</h2>' +
+      '<p style="margin:0 0 10px">Google không cho đăng nhập ngay trong Zalo, Messenger hay Facebook.</p>' +
+      '<p class="muted" style="margin:0 0 14px">Bấm dấu <b>⋯</b> (hoặc <b>⋮</b>) ở góc trên, chọn <b>Mở bằng trình duyệt</b> (Chrome hoặc Safari). Hoặc chép link dưới đây dán vào Chrome/Safari.</p>' +
+      '<input readonly value="' + HOME + '" style="width:100%" onclick="this.select()">' +
+      '<button class="btn pri" type="button" id="kkCopy" style="width:100%;margin-top:10px">Chép link</button></div>');
+    var cb = $('kkCopy'); if (cb) cb.onclick = function () {
+      var t = document.createElement('textarea'); t.value = HOME; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); cb.textContent = 'Đã chép, dán vào Chrome hoặc Safari'; } catch (e) {} t.remove();
+    };
+    return;
+  }
+  // Điện thoại đăng nhập ổn định nhất khi trang và trang đăng nhập cùng một tên miền
+  if (MOBILE && location.hostname !== cfg.authDomain && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    location.replace(HOME + location.search + location.hash);
+    return;
+  }
+
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore();
   var EMU = /(^|[?&])emu=1(&|$)/.test(location.search.slice(1)) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -62,6 +86,7 @@
       b.disabled = true;
       var p = new firebase.auth.GoogleAuthProvider();
       p.setCustomParameters({ prompt: 'select_account' });
+      if (MOBILE) { auth.signInWithRedirect(p).catch(function (e) { showLogin('Không đăng nhập được' + (e && e.code ? ' (' + e.code + ')' : '') + '. Thử lại.'); }); return; }
       auth.signInWithPopup(p).catch(function (e) {
         var code = e && e.code || '';
         if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/web-storage-unsupported') return auth.signInWithRedirect(p);
