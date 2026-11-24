@@ -348,6 +348,8 @@ body.gate .side .navsec,body.gate .seg-m{display:none!important}
 .gatebox .lbl{font-size:12.5px;color:var(--ink2)}
 .gatebox a.btn{display:flex;min-height:44px}
 #btnData,#btnAcc{min-height:36px;padding:0 10px;font-size:13px}
+.navsec[hidden]{display:none}
+@media(min-width:861px){#btnData,#btnAcc{display:none!important}}
 #dlg7{width:min(94vw,640px)}
 .acct{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
 .acct table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -383,6 +385,10 @@ window.__apDone=function(){fin=true};tick()})();</script>
       <button class="nav" type="button" data-sh=""><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg><span class="nm2">Tất cả mã</span></button>
       <button class="nav" type="button" data-sh="todo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span class="nm2">Chưa đếm</span><span class="sub" data-cnt="todo"></span></button>
       <button class="nav" type="button" data-sh="done"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span class="nm2">Đã đếm</span><span class="sub" data-cnt="done"></span></button>
+    </div>
+    <div class="navsec" id="sideSys" hidden><div class="hd">Hệ thống</div>
+      <button class="nav" type="button" id="sideAcc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M17 11h4M19 9v4"/></svg><span class="nm2">Tài khoản được phép</span><span class="sub" id="sideAccN"></span></button>
+      <button class="nav" type="button" id="sideData"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg><span class="nm2">Sao lưu và nhập dữ liệu</span></button>
     </div>
     <div class="foot2">© 2026 Phần mềm thuộc quyền sở hữu của Nguyễn Tuấn Minh</div>
   </aside>
@@ -533,7 +539,7 @@ function build(force){
   sec("Mã mới thêm (NVL)","n",cn.n.length?[["Chưa có trong danh mục",cn.n]]:[]);sec("Mã mới thêm (BTP)","b",cn.b.length?[["Chưa có trong danh mục",cn.b]]:[]);
   sec("Nguyên liệu thô (NVL)","n",S.nvl.groups);sec("Bán thành phẩm (BTP)","b",S.btp.groups);
   if(h&&desk)h='<div class="kkwrap"><table class="kk"><thead><tr><th>Tên hàng</th><th style="text-align:center">ĐVT</th><th class="gin">Số đếm của bạn</th><th style="text-align:right">Tổng mọi người</th><th>Chi tiết người đếm</th><th>Ảnh thực tế</th></tr></thead><tbody>'+h+'</tbody></table></div>';
-  L.innerHTML=h||'<div class="empty">Danh mục đang trống.'+(window.KKB&&KKB.isAdmin()?' Bấm <b>⚙ Dữ liệu</b> để nhập danh mục từ file.':' Nhờ quản trị nhập danh mục.')+'</div>';
+  L.innerHTML=h||'<div class="empty">Danh mục đang trống.'+(window.KKB&&KKB.isAdmin()?' Bấm <b>Sao lưu và nhập dữ liệu</b> (hoặc ⚙ Dữ liệu trên điện thoại) để nhập danh mục từ file.':' Nhờ quản trị nhập danh mục.')+'</div>';
   var cards={};L.querySelectorAll(".card").forEach(function(c){cards[c.dataset.id]=c;renum(c)});S.cards=cards;S.order=order;
   refresh();photos();filter()}
 
@@ -891,6 +897,9 @@ $("#btnAcc").addEventListener("click",function(){if(!window.KKB)return;var fs=KK
     if(!R7.owner&&me&&R7.admins.indexOf(me)<0)R7.owner=me;
     r[1].docs.forEach(function(x){var v=x.data()||{},e=String(v.email||"").toLowerCase();if(e&&(!R7.seen[e]||(v.at||"")>(R7.seen[e].at||"")))R7.seen[e]={name:v.name,at:v.at}});
     r7draw()},function(){$("#d7_sum").textContent="Không tải được danh sách tài khoản (cần quyền quản trị).";})});
+function r7count(){if(!window.KKB)return;KKB.fs.doc("config/roles").onSnapshot(function(x){var d=x.exists?(x.data()||{}):{};$("#sideAccN").textContent=String((d.staff||[]).length+(d.admins||[]).length+1)},function(){})}
+$("#sideAcc").addEventListener("click",function(){$("#btnAcc").click()});
+$("#sideData").addEventListener("click",function(){$("#btnData").click()});
 $("#d7_add").addEventListener("click",r7add);
 $("#d7_new").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();r7add()}});
 $("#d7_cancel").addEventListener("click",function(){$("#dlg7").close()});
@@ -904,7 +913,7 @@ Promise.all([claude.use("db"),claude.use("user")]).then(function(r){
   var u=S.user;
   (u?u.me():Promise.resolve(null)).then(function(me){
     if(me){S.uid=me.id;S.meName=me.name||"";$("#who").innerHTML=(me.avatarUrl?'<img alt="" referrerpolicy="no-referrer">':'')+'<span></span>';if(me.avatarUrl)$("#who img").src=me.avatarUrl;$("#who span").textContent=me.name||"Bạn"}
-    $("#btnOut").hidden=false;if(window.KKB&&KKB.isAdmin()){$("#btnData").hidden=false;$("#btnAcc").hidden=false}
+    $("#btnOut").hidden=false;if(window.KKB&&KKB.isAdmin()){$("#btnData").hidden=false;$("#btnAcc").hidden=false;$("#sideSys").hidden=false;r7count()}
     if(!S.uid){S.canWrite=false;$("#ro").textContent="Không xác định được tài khoản của bạn nên chưa nhập số được. Hãy đăng nhập lại rồi mở lại trang.";$("#ro").classList.remove("hide")}
     var cw=u&&u.can?u.can("data.write"):null;Promise.resolve(cw).then(function(ok){if(ok===false){S.canWrite=false;$("#ro").classList.remove("hide");$("#addcode").disabled=true;build(true)}});
     S.db.doc("cfg/main").onSnapshot(function(s){window.__ap&&__ap("cfg");S.cfg=s.exists?s.data():{};fillKy();build()},function(){});
