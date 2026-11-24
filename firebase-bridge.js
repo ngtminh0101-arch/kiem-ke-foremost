@@ -41,6 +41,15 @@
   // Link để bật thẳng Chrome (Android) hoặc Safari (iPhone) từ trong Zalo
   var ESCAPE = IOS ? 'x-safari-' + HOME
     : 'intent://' + cfg.authDomain + '/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(HOME) + ';end';
+  if (IN_APP) {
+    // Vừa mở link trong Zalo: tự bật Chrome/Safari (chỉ thử 1 lần mỗi lần mở, để bấm quay lại không bị lặp)
+    try {
+      if (!sessionStorage.getItem('kkEsc')) {
+        sessionStorage.setItem('kkEsc', '1');
+        setTimeout(function () { location.href = ESCAPE; }, 150);
+      }
+    } catch (e) {}
+  }
   // Điện thoại đăng nhập ổn định nhất khi trang và trang đăng nhập cùng một tên miền
   if (MOBILE && !IN_APP && location.hostname !== cfg.authDomain && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     location.replace(HOME + location.search + location.hash);
@@ -102,7 +111,7 @@
       pw +
       (info ? '<p class="small" role="status" style="color:var(--good,#1a7f37);margin:10px 0 0">' + esc(info) + '</p>' : '') +
       (err ? '<p class="small" role="alert" style="color:var(--bad);margin:10px 0 0">' + esc(err) + '</p>' : '') +
-      '<p class="muted small" style="margin:10px 0 0;font-size:11px">Bản 24/11 d</p></div>');
+      '<p class="muted small" style="margin:10px 0 0;font-size:11px">Bản 24/11 e</p></div>');
     var b = $('kkLogin');
     if (b) b.onclick = function () {
       b.disabled = true;
