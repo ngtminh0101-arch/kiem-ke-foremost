@@ -1,6 +1,6 @@
 /*
  * Cầu nối Firebase cho app Kiểm kê Foremost.
- * - Đăng nhập bằng tài khoản Google, hoặc Gmail + mật khẩu (dùng được trong Zalo).
+ * - Đăng nhập bằng tài khoản Google.
  * - Lưu dữ liệu trên Cloud Firestore, cập nhật tức thời giữa các máy.
  * - Cung cấp cho app các hàm db / user / downloads giống bản cũ.
  * Không cần sửa file này. Chỉ cần sửa config.js và firestore.rules.
@@ -96,22 +96,16 @@
 
   function showLogin(err, info) {
     var google = '<button class="btn pri" id="kkLogin" type="button" style="width:100%">Đăng nhập bằng Google</button>';
-    var open = '<a class="btn pri" id="kkOpen" href="' + esc(ESCAPE) + '" style="display:block;text-align:center;width:100%;box-sizing:border-box;text-decoration:none">Mở bằng ' + (IOS ? 'Safari' : 'Chrome') + ' để đăng nhập Google</a><p class="muted small" style="margin:6px 0 0">Nếu nút không mở được trình duyệt, dùng cách bên dưới.</p>';
-    var pw = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line,#ddd)">' +
-      '<p style="margin:0 0 8px"><b>' + (IN_APP ? 'Hoặc đăng nhập ngay trong Zalo' : 'Hoặc đăng nhập bằng mật khẩu') + '</b></p>' +
-      '<label class="small" for="kkEm">Gmail đã được cấp quyền</label><input id="kkEm" type="email" autocomplete="username" inputmode="email" style="width:100%;margin:4px 0 8px">' +
-      '<label class="small" for="kkPw">Mật khẩu</label><input id="kkPw" type="password" autocomplete="current-password" style="width:100%;margin:4px 0 10px">' +
-      '<button class="btn pri" id="kkPwIn" type="button" style="width:100%">Đăng nhập</button>' +
-      '<div class="row" style="margin-top:8px;gap:8px"><button class="btn" id="kkPwNew" type="button" style="flex:1">Tạo mật khẩu lần đầu</button><button class="btn" id="kkPwReset" type="button" style="flex:1">Quên mật khẩu</button></div>' +
-      '<p class="muted small" style="margin:8px 0 0">Lần đầu: nhập Gmail, đặt mật khẩu, bấm "Tạo mật khẩu lần đầu", rồi mở Gmail bấm link xác nhận.</p></div>';
+    var open = '<a class="btn pri" id="kkOpen" href="' + esc(ESCAPE) + '" style="display:block;text-align:center;width:100%;box-sizing:border-box;text-decoration:none">Mở bằng ' + (IOS ? 'Safari' : 'Chrome') + ' để đăng nhập Google</a><p class="muted small" style="margin:6px 0 0">Nếu nút không mở được, mở Chrome/Safari rồi gõ ' + esc(cfg.authDomain) + '</p>';
+    var pw = '';
     screen('Đăng nhập',
       '<div class="card" style="max-width:460px"><h2 style="margin:0 0 6px;font-size:18px">Đăng nhập để kiểm kê</h2>' +
-      (IN_APP ? '<p class="muted" style="margin:0 0 14px">Google không cho đăng nhập Google ngay trong Zalo, Messenger, Facebook.</p>' + open
+      (IN_APP ? '<p class="muted" style="margin:0 0 14px">Google không cho đăng nhập ngay trong Zalo, Messenger, Facebook. Bấm dấu <b>⋯</b> ở góc trên, chọn <b>Mở bằng trình duyệt</b>, hoặc bấm nút dưới đây.</p>' + open
               : '<p class="muted" style="margin:0 0 14px">Dùng tài khoản Google (Gmail) đã được quản trị cấp quyền.</p>' + google) +
       pw +
       (info ? '<p class="small" role="status" style="color:var(--good,#1a7f37);margin:10px 0 0">' + esc(info) + '</p>' : '') +
       (err ? '<p class="small" role="alert" style="color:var(--bad);margin:10px 0 0">' + esc(err) + '</p>' : '') +
-      '<p class="muted small" style="margin:10px 0 0;font-size:11px">Bản 24/11 e</p></div>');
+      '<p class="muted small" style="margin:10px 0 0;font-size:11px">Bản 25/11 a</p></div>');
     var b = $('kkLogin');
     if (b) b.onclick = function () {
       b.disabled = true;
@@ -124,27 +118,6 @@
         if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') { b.disabled = false; return; }
         showLogin(code === 'auth/unauthorized-domain' ? 'Tên miền này chưa được thêm vào Firebase (Authentication → Settings → Authorized domains).' : errText(e));
       });
-    };
-    function val() { return { em: ($('kkEm').value || '').trim().toLowerCase(), pw: $('kkPw').value || '' }; }
-    function busy(on) { ['kkPwIn', 'kkPwNew', 'kkPwReset'].forEach(function (id) { var x = $(id); if (x) x.disabled = on; }); }
-    $('kkPwIn').onclick = function () {
-      var v = val(); busy(true);
-      auth.signInWithEmailAndPassword(v.em, v.pw).catch(function (e) { showLogin(errText(e)); $('kkEm').value = v.em; });
-    };
-    $('kkPwNew').onclick = function () {
-      var v = val(); busy(true);
-      auth.createUserWithEmailAndPassword(v.em, v.pw).then(function (c) {
-        return c.user.sendEmailVerification();
-      }).catch(function (e) { showLogin(errText(e)); $('kkEm').value = v.em; });
-    };
-    $('kkPwReset').onclick = function () {
-      var v = val();
-      if (!v.em) { showLogin('Nhập Gmail trước rồi bấm "Quên mật khẩu".'); return; }
-      busy(true);
-      auth.sendPasswordResetEmail(v.em).then(function () {
-        showLogin('', 'Đã gửi email đặt mật khẩu tới ' + v.em + '. Mở Gmail, bấm link, đặt mật khẩu, rồi quay lại đây đăng nhập.');
-        $('kkEm').value = v.em;
-      }, function (e) { showLogin(errText(e)); $('kkEm').value = v.em; });
     };
   }
 
