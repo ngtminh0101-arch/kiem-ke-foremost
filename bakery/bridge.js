@@ -1,6 +1,6 @@
 /*
  * Cầu nối Firebase cho app Kiểm kê Bakery.
- * - Đăng nhập bằng Google, hoặc Gmail + mật khẩu (danh sách tài khoản riêng của Bakery: bk_roles/main).
+ * - Chỉ đăng nhập bằng Google (danh sách tài khoản riêng của Bakery: bk_roles/main).
  * - Dữ liệu nằm trên Cloud Firestore, các bộ sưu tập bắt đầu bằng "bk_".
  * - Cung cấp cho app các hàm db / user / assets / downloads.
  */
@@ -60,36 +60,19 @@
   function errText(e) {
     var c = e && e.code || '';
     var m = {
-      'auth/invalid-email': 'Email không đúng dạng.',
-      'auth/missing-password': 'Hãy nhập mật khẩu.',
-      'auth/weak-password': 'Mật khẩu cần ít nhất 6 ký tự.',
-      'auth/email-already-in-use': 'Email này đã có tài khoản. Bấm "Quên mật khẩu" để đặt mật khẩu mới qua email.',
-      'auth/invalid-credential': 'Sai email hoặc mật khẩu. Nếu chưa từng đặt mật khẩu, bấm "Tạo mật khẩu lần đầu".',
-      'auth/wrong-password': 'Sai mật khẩu.',
-      'auth/user-not-found': 'Email này chưa có mật khẩu. Bấm "Tạo mật khẩu lần đầu".',
       'auth/too-many-requests': 'Thử quá nhiều lần. Chờ vài phút rồi thử lại.',
-      'auth/network-request-failed': 'Mất mạng. Kiểm tra kết nối rồi thử lại.',
-      'auth/operation-not-allowed': 'Đăng nhập bằng mật khẩu chưa được bật. Báo quản trị.'
+      'auth/network-request-failed': 'Mất mạng. Kiểm tra kết nối rồi thử lại.'
     };
     return m[c] || ('Không đăng nhập được' + (c ? ' (' + c + ')' : '') + '. Thử lại.');
   }
 
-  function showLogin(err, info) {
+  function showLogin(err) {
     var google = '<button class="btn pri" id="kkLogin" type="button" style="width:100%">Đăng nhập bằng Google</button>';
-    var open = '<a class="btn pri" id="kkOpen" href="' + esc(ESCAPE) + '" style="width:100%;text-decoration:none">Mở bằng ' + (IOS ? 'Safari' : 'Chrome') + ' để đăng nhập Google</a><p class="note" style="margin:6px 0 0">Nếu nút không mở được trình duyệt, dùng cách bên dưới.</p>';
-    var pw = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
-      '<p style="margin:0 0 8px"><b>' + (IN_APP ? 'Hoặc đăng nhập ngay trong Zalo' : 'Hoặc đăng nhập bằng mật khẩu') + '</b></p>' +
-      '<label class="lbl" for="kkEm">Gmail đã được cấp quyền</label><input id="kkEm" type="email" autocomplete="username" inputmode="email">' +
-      '<label class="lbl" for="kkPw">Mật khẩu</label><input id="kkPw" type="password" autocomplete="current-password">' +
-      '<button class="btn pri" id="kkPwIn" type="button" style="width:100%;margin-top:10px">Đăng nhập</button>' +
-      '<div class="row" style="margin-top:8px"><button class="btn" id="kkPwNew" type="button" style="flex:1">Tạo mật khẩu lần đầu</button><button class="btn" id="kkPwReset" type="button" style="flex:1">Quên mật khẩu</button></div>' +
-      '<p class="note" style="margin:8px 0 0">Lần đầu: nhập Gmail, đặt mật khẩu, bấm "Tạo mật khẩu lần đầu", rồi mở Gmail bấm link xác nhận.</p></div>';
+    var open = '<a class="btn pri" id="kkOpen" href="' + esc(ESCAPE) + '" style="width:100%;text-decoration:none">Mở bằng ' + (IOS ? 'Safari' : 'Chrome') + ' để đăng nhập Google</a>';
     screen('Đăng nhập',
       '<div class="pnl gatebox"><h2 style="margin:0;font-size:18px">Đăng nhập để kiểm kê</h2>' +
-      (IN_APP ? '<p class="note" style="margin:0">Google không cho đăng nhập Google ngay trong Zalo, Messenger, Facebook.</p>' + open
-              : '<p class="note" style="margin:0">Dùng tài khoản Google (Gmail) đã được quản trị app Bakery cấp quyền.</p>' + google) +
-      pw +
-      (info ? '<p class="note" role="status" style="color:var(--jade);margin:0">' + esc(info) + '</p>' : '') +
+      (IN_APP ? '<p class="note" style="margin:0">Google không cho đăng nhập ngay trong Zalo, Messenger, Facebook. Hãy mở trang bằng trình duyệt.</p>' + open
+              : '<p class="note" style="margin:0">Chỉ đăng nhập bằng tài khoản Google (Gmail) đã được quản trị app Bakery cấp quyền.</p>' + google) +
       (err ? '<p class="note bad" role="alert" style="margin:0">' + esc(err) + '</p>' : '') + '</div>');
     var b = $('kkLogin');
     if (b) b.onclick = function () {
@@ -103,37 +86,6 @@
         showLogin(code === 'auth/unauthorized-domain' ? 'Tên miền này chưa được thêm vào Firebase (Authentication → Settings → Authorized domains).' : errText(e));
       });
     };
-    function val() { return { em: ($('kkEm').value || '').trim().toLowerCase(), pw: $('kkPw').value || '' }; }
-    function busy(on) { ['kkPwIn', 'kkPwNew', 'kkPwReset'].forEach(function (id) { var x = $(id); if (x) x.disabled = on; }); }
-    $('kkPwIn').onclick = function () { var v = val(); busy(true); auth.signInWithEmailAndPassword(v.em, v.pw).catch(function (e) { showLogin(errText(e)); $('kkEm').value = v.em; }); };
-    $('kkPwNew').onclick = function () {
-      var v = val(); busy(true);
-      auth.createUserWithEmailAndPassword(v.em, v.pw).then(function (c) { return c.user.sendEmailVerification(); }).catch(function (e) { showLogin(errText(e)); $('kkEm').value = v.em; });
-    };
-    $('kkPwReset').onclick = function () {
-      var v = val();
-      if (!v.em) { showLogin('Nhập Gmail trước rồi bấm "Quên mật khẩu".'); return; }
-      busy(true);
-      auth.sendPasswordResetEmail(v.em).then(function () { showLogin('', 'Đã gửi email đặt mật khẩu tới ' + v.em + '. Mở Gmail, bấm link, đặt mật khẩu, rồi quay lại đây đăng nhập.'); $('kkEm').value = v.em; },
-        function (e) { showLogin(errText(e)); $('kkEm').value = v.em; });
-    };
-  }
-
-  function showVerify(u, msg) {
-    screen('Xác nhận email',
-      '<div class="pnl gatebox"><h2 style="margin:0;font-size:18px">Xác nhận Gmail của bạn</h2>' +
-      '<p style="margin:0">Đã gửi email xác nhận tới <b>' + esc(u.email) + '</b>. Mở Gmail, bấm link trong email (xem cả mục Spam), rồi quay lại đây bấm "Tôi đã xác nhận".</p>' +
-      '<button class="btn pri" id="kkVf" type="button" style="width:100%">Tôi đã xác nhận</button>' +
-      '<div class="row"><button class="btn" id="kkVfAgain" type="button" style="flex:1">Gửi lại email</button><button class="btn" id="kkVfOut" type="button" style="flex:1">Đăng xuất</button></div>' +
-      (msg ? '<p class="note" role="status" style="margin:0">' + esc(msg) + '</p>' : '') + '</div>');
-    $('kkVf').onclick = function () {
-      u.reload().then(function () { return u.getIdToken(true); }).then(function () {
-        if (auth.currentUser && auth.currentUser.emailVerified) location.reload();
-        else showVerify(u, 'Chưa thấy xác nhận. Hãy bấm link trong email rồi thử lại.');
-      });
-    };
-    $('kkVfAgain').onclick = function () { u.sendEmailVerification().then(function () { showVerify(u, 'Đã gửi lại.'); }, function (e) { showVerify(u, errText(e)); }); };
-    $('kkVfOut').onclick = function () { auth.signOut(); };
   }
 
   function showDenied(u) {
@@ -150,7 +102,8 @@
     if (st.started) { if (!u || !st.user || u.uid !== st.user.uid) location.reload(); return; }
     st.user = u;
     if (!u) { showLogin(); return; }
-    if (!u.emailVerified) { showVerify(u); return; }
+    // Chỉ chấp nhận tài khoản Google; phiên đăng nhập bằng mật khẩu cũ (nếu có) bị đăng xuất
+    if (!(u.providerData || []).some(function (p) { return p && p.providerId === 'google.com'; })) { auth.signOut().then(function () { showLogin('App Bakery chỉ cho đăng nhập bằng Google.'); }); return; }
     screen('Đang kiểm tra quyền…', '<div class="pnl note">Đang kiểm tra quyền của tài khoản…</div>');
     Promise.all([canRead('bk_roles/main'), canRead('bk_cfg/main')]).then(function (r) {
       if (!r[1]) { showDenied(u); return; }
