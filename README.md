@@ -15,5 +15,5 @@ App kiểm kê nguyên liệu và bán thành phẩm cho Bakery, chạy cùng d�
 - Link: https://kiemke-bakery.web.app (trang Hosting riêng `kiemke-bakery` trong dự án kiemke-foremost; thư mục `bakery/` được đưa lên làm gốc của trang này, có `bakery/config.js` riêng; đăng nhập Google dùng cửa sổ bật lên qua kiemke-foremost.firebaseapp.com). Địa chỉ cũ kiemke-foremost.web.app/bakery/ tự chuyển sang.
 - Dữ liệu Firestore: `bk_cfg/main` (kỳ), `bk_dm/nvl`, `bk_dm/btp` (danh mục, lưu dạng chuỗi JSON), `bk_c/<uid>` (số đếm, mã mới, đơn vị, ảnh của từng người), `bk_ph/<id>` (ảnh thực tế, JPEG nén lưu thẳng trong Firestore, không cần Storage), `bk_roles/main` (tài khoản: owner, admins[], staff[]), `bk_users/<uid>` (tên, email, lần vào gần nhất).
 - Cần thêm quy tắc bảo mật cho các bộ sưu tập `bk_*` trong Firebase Console (Firestore → Rules).
-- Quản trị quản lý tài khoản, nhập danh mục và tải sao lưu ở mục **Hệ thống** (thanh bên trái) hoặc nút 👥 / ⚙ Dữ liệu trên điện thoại.
+- Chỉ đăng nhập bằng Google (tài khoản đăng nhập bằng mật khẩu bị đăng xuất). Quản trị quản lý tài khoản, nhập danh mục và tải sao lưu ở mục **Hệ thống** (thanh bên trái) hoặc nút 👥 / ⚙ Dữ liệu trên điện thoại.
 - Chạy thử với giả lập: `firebase emulators:start --only auth,firestore`, rồi chạy máy chủ tĩnh trong thư mục `bakery/` và mở `http://localhost:<cổng>/?emu=1`.
