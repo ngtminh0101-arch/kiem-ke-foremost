@@ -353,7 +353,8 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
   var CFG = null; // cửa hàng đang mở
   var ST_OPEN = 'Đang kiểm', ST_SUB = 'Đã nộp';
   var CONDS = ['Tốt', 'Cần sửa chữa', 'Hỏng', 'Không còn sử dụng'], CONDS_NL = ['Tốt', 'Sắp hết hạn', 'Hết hạn / hỏng'];
-  var RANK = { ts: 0, nl: 1, vt: 2 }, CONDS_VT = ['Tốt', 'Hỏng / rách / móp'], AREAS = ['Nguyên liệu pha chế', 'Bao bì', 'Đồ vệ sinh', 'VTTH', 'Quầy bar', 'Kho'], UNITS = ['kg', 'g', 'lít', 'ml', 'chai', 'hộp', 'gói', 'túi', 'thùng', 'lon', 'cái'];
+  var RANK = { ts: 0, nl: 1, vt: 2, tp: 3 }, CONDS_VT = ['Tốt', 'Hỏng / rách / móp'], CONDS_TP = ['Tốt', 'Hết hạn / hỏng'], AREAS = ['Nguyên liệu pha chế', 'Bao bì', 'Đồ vệ sinh', 'VTTH', 'Quầy bar', 'Kho', 'Tủ bánh'],
+      LO = { nl: ['Nguyên liệu', 'nguyên liệu', 'Nguyên liệu pha chế', 'NL', 'NguyenLieu_'], vt: ['Bao bì - vật tư', 'bao bì vật tư', 'VTTH', 'VT', 'BaoBiVatTu_'], tp: ['Thành phẩm', 'thành phẩm', 'Tủ bánh', 'TP', 'ThanhPham_'] }, UNITS = ['kg', 'g', 'lít', 'ml', 'chai', 'hộp', 'gói', 'túi', 'thùng', 'lon', 'cái'];
   var S = {
     db: null, user: null, downloads: null, me: null, OWNER: false, CAN_WRITE: null, RO: false, px: '', gate: null, gateReady: false, unGate: null,
     catalog: null, catA: [], catN: [], revA: 0, revN: 0, loaded: { a: false, n: false }, bookA: null, bookN: null, existsA: false, existsN: false, book: null, catView: 'ts', sessions: null, approvals: {},
@@ -405,8 +406,8 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     var b = bookQty(it.id); if (b === null) return null; // chưa có số sổ: không tính là chênh lệch
     return num(Number(c.q) - b);
   }
-  function loaiName() { return S.f.loai === 'nl' ? 'nguyên liệu' : S.f.loai === 'vt' ? 'bao bì vật tư' : 'tài sản'; }
-  function catName() { return S.catView === 'vt' ? 'bao bì - vật tư' : 'nguyên liệu'; }
+  function loaiName() { return LO[S.f.loai] ? LO[S.f.loai][1] : 'tài sản'; }
+  function catName() { return S.catView === 'vt' ? 'bao bì - vật tư' : S.catView === 'tp' ? 'thành phẩm' : 'nguyên liệu'; }
   function stats(all) {
     var list = all ? S.items : S.items.filter(function (it) { return it.loai === S.f.loai; });
     var tong = list.length, da = 0, diff = 0, nw = 0;
@@ -589,7 +590,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     }
   }
   function tag(x, l) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); o.loai = l; return o; }
-  function mergeCat() { if (!S.loaded.a || !S.loaded.n) return; S.catalog = S.catA.map(function (x) { return tag(x, 'ts'); }).concat(S.catN.map(function (x) { return tag(x, x.lo === 'vt' ? 'vt' : 'nl'); })); }
+  function mergeCat() { if (!S.loaded.a || !S.loaded.n) return; S.catalog = S.catA.map(function (x) { return tag(x, 'ts'); }).concat(S.catN.map(function (x) { return tag(x, x.lo === 'vt' || x.lo === 'tp' ? x.lo : 'nl'); })); }
   function mergeBook() { S.book = { qty: Object.assign({}, S.bookA && S.bookA.qty || {}, S.bookN && S.bookN.qty || {}) }; }
   // Đợt cần theo dõi số đếm: đợt đang mở (tab Kiểm kê) hoặc đợt đang xem (tab Các đợt)
   function targetSid() {
@@ -777,9 +778,9 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
   function patchStats() {
     var sw = $('loaiSw');
     if (sw) {
-      var c = { ts: [0, 0], nl: [0, 0], vt: [0, 0] };
+      var c = { ts: [0, 0], nl: [0, 0], vt: [0, 0], tp: [0, 0] };
       S.items.forEach(function (it) { var d = counted(S.counts[it.id]) ? 1 : 0; c[it.loai][0] += d; c[it.loai][1]++; });
-      sw.innerHTML = [['ts', 'Tài sản'], ['nl', 'Nguyên liệu'], ['vt', 'Bao bì - vật tư']].map(function (o) { return '<button data-loai="' + o[0] + '" aria-selected="' + (S.f.loai === o[0]) + '">' + o[1] + ' <span class="small">' + c[o[0]][0] + '/' + c[o[0]][1] + '</span></button>'; }).join('');
+      sw.innerHTML = [['ts', 'Tài sản'], ['nl', 'Nguyên liệu'], ['vt', 'Bao bì - vật tư'], ['tp', 'Thành phẩm']].map(function (o) { return '<button data-loai="' + o[0] + '" aria-selected="' + (S.f.loai === o[0]) + '">' + o[1] + ' <span class="small">' + c[o[0]][0] + '/' + c[o[0]][1] + '</span></button>'; }).join('');
     }
     patchTot();
     var el = $('stats'); if (!el) return;
@@ -833,7 +834,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     r.querySelector('[data-t="da"]').textContent = da;
     var x = r.querySelector('[data-t="diff"]'); if (x) x.textContent = df ? df + ' mục lệch' : '';
   }
-  function condOpts(it, cur) { return '<option value="">Tình trạng…</option>' + (it.loai === 'nl' ? CONDS_NL : it.loai === 'vt' ? CONDS_VT : CONDS).map(function (x) { return '<option' + (cur === x ? ' selected' : '') + '>' + x + '</option>'; }).join(''); }
+  function condOpts(it, cur) { return '<option value="">Tình trạng…</option>' + (it.loai === 'nl' ? CONDS_NL : it.loai === 'vt' ? CONDS_VT : it.loai === 'tp' ? CONDS_TP : CONDS).map(function (x) { return '<option' + (cur === x ? ' selected' : '') + '>' + x + '</option>'; }).join(''); }
   function rowHtml(it, ed) {
     var c = S.counts[it.id] || {}, cn = counted(c), id = esc(it.id);
     var h = '<tr class="item" id="it_' + id + '" data-id="' + id + '"><td class="nm"><span class="name">' + esc(it.ten) + '</span>' + (it.kr ? '<span class="kr">' + esc(it.kr) + '</span>' : '') + (it.nw ? ' <span class="badge plus">Phát sinh mới</span>' : '') +
@@ -852,7 +853,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       (S.OWNER ? '<div class="figs" data-figs></div>' : '<span class="badge" data-state></span>') + '</div>';
     if (ed) {
       h += '<div class="ctl"><div class="stepper"><button type="button" data-act="dec" aria-label="Giảm">−</button><input class="qty-in" type="text" inputmode="decimal" autocomplete="off" placeholder="?" value="' + (cn ? esc(c.q) : '') + '" aria-label="Số lượng thực tế"><button type="button" data-act="inc" aria-label="Tăng">+</button></div><span class="unit">' + esc(it.dv || '') + '</span>' +
-        '<select class="cond" aria-label="Tình trạng"><option value="">Tình trạng…</option>' + (it.loai === 'nl' ? CONDS_NL : it.loai === 'vt' ? CONDS_VT : CONDS).map(function (x) { return '<option' + (c.st === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
+        '<select class="cond" aria-label="Tình trạng"><option value="">Tình trạng…</option>' + (it.loai === 'nl' ? CONDS_NL : it.loai === 'vt' ? CONDS_VT : it.loai === 'tp' ? CONDS_TP : CONDS).map(function (x) { return '<option' + (c.st === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
         '<button type="button" class="link" data-act="note">' + (c.note ? 'Sửa ghi chú' : 'Ghi chú') + '</button>' +
         (it.nw ? '<button type="button" class="link" style="color:var(--bad)" data-act="rm">Xóa</button>' : '') + '</div>' +
         '<div class="note-row" ' + (c.note ? '' : 'hidden') + '><input type="text" class="note-in" maxlength="300" placeholder="Ghi chú (ví dụ: hỏng 1 cái, chuyển sang bếp…)" value="' + esc(c.note || '') + '" aria-label="Ghi chú"></div>';
@@ -924,7 +925,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     var areas = uniq(['Cửa hàng'].concat(AREAS, S.items.map(function (x) { return x.kv; })));
     var groups = uniq((S.catalog || []).map(function (x) { return x.nhom; }));
     modal('<h2 style="margin:0 0 4px;font-size:18px">Thêm tài sản / nguyên liệu phát sinh</h2><p class="muted small" style="margin:0">Dùng khi cửa hàng có mục mà danh mục chưa có.</p>' +
-      '<label class="f" for="aLoai">Loại</label><select id="aLoai" style="width:100%"><option value="ts">Tài sản</option><option value="nl">Nguyên liệu</option><option value="vt">Bao bì - vật tư</option></select><label class="f" for="aName">Tên</label><input type="text" id="aName" maxlength="120">' +
+      '<label class="f" for="aLoai">Loại</label><select id="aLoai" style="width:100%"><option value="ts">Tài sản</option><option value="nl">Nguyên liệu</option><option value="vt">Bao bì - vật tư</option><option value="tp">Thành phẩm</option></select><label class="f" for="aName">Tên</label><input type="text" id="aName" maxlength="120">' +
       '<div class="row" style="align-items:flex-end"><div class="grow"><label class="f" for="aQty">Số lượng thực tế</label><input type="text" inputmode="decimal" id="aQty" value="1"></div>' +
       '<div class="grow"><label class="f" for="aUnit">Đơn vị (nếu có)</label><input type="text" id="aUnit" list="dlUnits" maxlength="20" placeholder="kg, lít, hộp…"></div></div>' +
       '<label class="f" for="aArea">Vị trí</label><select id="aArea" style="width:100%">' + opts(areas) + '</select>' +
@@ -932,7 +933,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       '<datalist id="dlUnits">' + opts(UNITS) + '</datalist><datalist id="dlGroups">' + opts(groups) + '</datalist>' +
       '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="aCancel">Hủy</button><button class="btn pri" id="aOk">Thêm</button></div>');
     $('aCancel').onclick = closeModal; $('aName').focus();
-    $('aLoai').onchange = function () { $('aArea').value = this.value === 'nl' ? 'Nguyên liệu pha chế' : this.value === 'vt' ? 'VTTH' : 'Cửa hàng'; };
+    $('aLoai').onchange = function () { $('aArea').value = LO[this.value] ? LO[this.value][2] : 'Cửa hàng'; };
     $('aOk').onclick = function () {
       var name = $('aName').value.trim(), q = Number($('aQty').value.replace(',', '.'));
       if (!name) { toast('Chưa nhập tên'); return; }
@@ -978,8 +979,8 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var c = S.counts[it.id]; if (!counted(c)) return;
       var nl = it.loai !== 'ts', q = nl ? plan.qtyN : plan.qtyA;
       if (it.nw) {
-        var cid = (nl ? (it.loai === 'vt' ? 'VT-N' : 'NL-N') : CFG.id + '-N') + it.id.replace(/^NEW-/, '');
-        if (!ids[cid]) { var rc = { id: cid, ten: it.ten, kr: '', nhom: it.nhom || '', kv: it.kv || (nl ? 'Nguyên liệu pha chế' : 'Cửa hàng'), dv: it.dv || '' }; if (it.loai === 'vt') rc.lo = 'vt'; (nl ? plan.newN : plan.newA).push(rc); }
+        var cid = (nl ? LO[it.loai][3] + '-N' : CFG.id + '-N') + it.id.replace(/^NEW-/, '');
+        if (!ids[cid]) { var rc = { id: cid, ten: it.ten, kr: '', nhom: it.nhom || '', kv: it.kv || (nl ? LO[it.loai][2] : 'Cửa hàng'), dv: it.dv || '' }; if (it.loai === 'vt' || it.loai === 'tp') rc.lo = it.loai; (nl ? plan.newN : plan.newA).push(rc); }
         q[cid] = Number(c.q); plan.added++;
       } else {
         var b = bookQty(it.id);
@@ -1038,7 +1039,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     return '<label class="f" for="cName">Tên</label><input type="text" id="cName" maxlength="120" value="' + esc(it.ten || '') + '">' +
       '<div class="row" style="align-items:flex-end"><div class="grow"><label class="f" for="cUnit">Đơn vị</label><input type="text" id="cUnit" list="dlUnits" maxlength="20" placeholder="kg, lít, hộp…" value="' + esc(it.dv || '') + '"></div>' +
       (S.OWNER && !it.id ? '<div class="grow"><label class="f" for="cBook">Số sổ (nếu có)</label><input type="text" inputmode="decimal" id="cBook"></div>' : '') + '</div>' +
-      '<label class="f" for="cArea">Vị trí</label><input type="text" id="cArea" list="dlAreas" maxlength="40" value="' + esc(it.kv || (S.catView === 'vt' ? 'VTTH' : 'Nguyên liệu pha chế')) + '">' +
+      '<label class="f" for="cArea">Vị trí</label><input type="text" id="cArea" list="dlAreas" maxlength="40" value="' + esc(it.kv || LO[S.catView][2]) + '">' +
       '<label class="f" for="cGroup">Nhóm</label><input type="text" id="cGroup" list="dlGroups" maxlength="40" placeholder="Ví dụ: Siro, Sữa, Trà…" value="' + esc(it.nhom || '') + '">' +
       '<datalist id="dlUnits">' + opts(UNITS) + '</datalist><datalist id="dlAreas">' + opts(areas) + '</datalist><datalist id="dlGroups">' + opts(groups) + '</datalist>';
   }
@@ -1050,8 +1051,8 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     if (cur) $('cDel').onclick = function () { if ($('cDel').getAttribute('data-sure') !== '1') { $('cDel').setAttribute('data-sure', '1'); $('cDel').textContent = 'Bấm lần nữa để xóa'; return; } closeModal(); saveCatalog(cat.filter(function (x) { return x.id !== id; })).then(function () { toast('Đã xóa'); }); };
     $('cOk').onclick = function () {
       var name = $('cName').value.trim(); if (!name) { toast('Chưa nhập tên'); return; }
-      var rec = { id: cur ? cur.id : 'NL-' + Math.random().toString(36).slice(2, 8), ten: name, kr: '', dv: $('cUnit').value.trim(), kv: $('cArea').value.trim() || (S.catView === 'vt' ? 'VTTH' : 'Nguyên liệu pha chế'), nhom: $('cGroup').value.trim() };
-      if (cur ? cur.lo === 'vt' : S.catView === 'vt') rec.lo = 'vt';
+      var rec = { id: cur ? cur.id : 'NL-' + Math.random().toString(36).slice(2, 8), ten: name, kr: '', dv: $('cUnit').value.trim(), kv: $('cArea').value.trim() || LO[S.catView][2], nhom: $('cGroup').value.trim() };
+      var lo2 = cur ? cur.lo : S.catView; if (lo2 === 'vt' || lo2 === 'tp') rec.lo = lo2;
       var bk = null, bEl = $('cBook');
       if (bEl && bEl.value.trim() !== '') { var b = Number(bEl.value.replace(',', '.')); if (!isFinite(b) || b < 0) { toast('Số sổ không hợp lệ'); return; } bk = {}; bk[rec.id] = b; }
       var items = cur ? cat.map(function (x) { return x.id === cur.id ? rec : x; }) : cat.concat([rec]);
@@ -1070,7 +1071,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
         if (!p[0] || seen[p[0].toLowerCase()]) return; seen[p[0].toLowerCase()] = 1;
         if (/^(tên|ten)\b/i.test(p[0]) && /đơn vị|don vi/i.test(p[1] || '')) return;
         var id = 'NL-' + Math.random().toString(36).slice(2, 8);
-        var rc2 = { id: id, ten: p[0], kr: '', dv: p[1] || '', nhom: p[2] || '', kv: p[3] || (S.catView === 'vt' ? 'VTTH' : 'Nguyên liệu pha chế') }; if (S.catView === 'vt') rc2.lo = 'vt'; out.push(rc2);
+        var rc2 = { id: id, ten: p[0], kr: '', dv: p[1] || '', nhom: p[2] || '', kv: p[3] || LO[S.catView][2] }; if (S.catView === 'vt' || S.catView === 'tp') rc2.lo = S.catView; out.push(rc2);
         if (p[4] !== undefined && p[4] !== '') { var b = Number(p[4].replace(',', '.')); if (isFinite(b) && b >= 0) bk[id] = b; }
       });
       return { out: out, bk: bk };
@@ -1085,7 +1086,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var bq = bookQty(it.id);
       return h + '<tr><td><div class="name">' + esc(it.ten) + '</div>' + (it.kr ? '<div class="kr">' + esc(it.kr) + '</div>' : '') + '<div class="small muted">' + esc(it.nhom) + '</div></td><td class="small">' + esc(it.dv || '') + '</td>' + (S.OWNER ? '<td class="num">' + (bq == null ? '—' : bq) + '</td>' + (isN ? '<td><button class="btn" data-edit="' + esc(it.id) + '">Sửa</button></td>' : '') : '') + '</tr>';
     }).join('');
-    v.innerHTML = '<div class="seg" id="catSw">' + [['ts', 'Tài sản'], ['nl', 'Nguyên liệu'], ['vt', 'Bao bì - vật tư']].map(function (o) { return '<button data-cv="' + o[0] + '" aria-selected="' + (view === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+    v.innerHTML = '<div class="seg" id="catSw">' + [['ts', 'Tài sản'], ['nl', 'Nguyên liệu'], ['vt', 'Bao bì - vật tư'], ['tp', 'Thành phẩm']].map(function (o) { return '<button data-cv="' + o[0] + '" aria-selected="' + (view === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
       '<div class="card"><b>' + cat.length + ' mục</b><div class="small muted">' + (S.OWNER ? 'Số sổ chỉ quản trị thấy. Sau mỗi đợt, bấm Duyệt để cập nhật theo số đếm thực tế.' : 'Danh sách cần kiểm kê của cửa hàng này.') + '</div>' +
       (canEdit ? '<div class="row" style="margin-top:12px"><button class="btn pri" id="cAdd">+ Thêm ' + catName() + '</button><button class="btn" id="cBulk">Nhập nhanh từ Excel</button></div>' : '') + '</div>' +
       '<div class="card tablewrap"><table><thead><tr><th>Tên</th><th>Đơn vị</th>' + (S.OWNER ? '<th class="num">Số sổ</th>' + (isN ? '<th></th>' : '') : '') + '</tr></thead><tbody>' + (rows || '<tr><td colspan="' + cols + '" class="muted">Chưa có danh mục.</td></tr>') + '</tbody></table></div>';
@@ -1111,7 +1112,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
   function saveFile(name, data, label) {
     return S.downloads.save({ filename: name, data: data }).then(function () { toast('Đã lưu file ' + label); }).catch(function (e) { if (!e || e.code !== 'declined') toast('Không tải được file ' + label); });
   }
-  function fileBase(s) { return 'KiemKe_' + (S.f.loai === 'nl' ? 'NguyenLieu_' : S.f.loai === 'vt' ? 'BaoBiVatTu_' : 'TaiSan_') + CFG.id + '_' + s.id.slice(1, 9); }
+  function fileBase(s) { return 'KiemKe_' + (LO[S.f.loai] ? LO[S.f.loai][4] : 'TaiSan_') + CFG.id + '_' + s.id.slice(1, 9); }
   function exportXlsx(s) {
     if (!S.downloads) { toast('Trình duyệt này chưa hỗ trợ tải file.'); return; }
     toast('Đang tạo file Excel…');
@@ -1119,7 +1120,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var t = tableOf(), ws = XLSX.utils.aoa_to_sheet([t.head].concat(t.rows));
       ws['!cols'] = t.head.map(function (h, i) { return { wch: h === 'Tên' ? 36 : h === 'Ghi chú' ? 30 : h === 'Tên tiếng Hàn' ? 24 : h === 'Nhóm' || h === 'Vị trí' ? 20 : 12 }; });
       ws['!freeze'] = { xSplit: 0, ySplit: 1 };
-      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, S.f.loai === 'nl' ? 'Nguyên liệu' : S.f.loai === 'vt' ? 'Bao bì - vật tư' : 'Tài sản');
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, LO[S.f.loai] ? LO[S.f.loai][0] : 'Tài sản');
       var buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       return saveFile(fileBase(s) + '.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), 'Excel');
     }).catch(function () { toast('Không tạo được file Excel. Kiểm tra mạng rồi thử lại.'); });
