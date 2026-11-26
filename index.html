@@ -367,6 +367,9 @@
   /* Màn hình mở app */
   #apboot { background: radial-gradient(700px 420px at 10% -10%, rgba(34,166,199,.26), transparent 62%), radial-gradient(640px 480px at 100% 30%, rgba(14,116,144,.16), transparent 60%), #EEF2F5; color: #1F2933; }
   #apboot .lg { width: 96px; height: 96px; border-radius: 24px; background: url("logo-tm.png") center/cover no-repeat; -webkit-mask: none; mask: none; box-shadow: 0 2px 4px rgba(15,25,35,.08), 0 18px 40px -18px rgba(14,116,144,.55); }
+  .gst { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .gst:last-of-type { border-bottom: 0; }
+  .gpw { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; font-weight: 600; letter-spacing: .04em; color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
   #apboot .pb { background: #DCE0E3; }
   #apboot .pb i { background: linear-gradient(90deg, #2C3640, #0E7490, #34BEDE); }
 </style>
@@ -601,27 +604,53 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     }
     $('pwOk').onclick = go; inp.onkeydown = function (e) { if (e.key === 'Enter') go(); };
   }
+  // Mật khẩu: gate/main giữ bản mã hóa để nhân viên kiểm tra; bản xem được lưu ở <cửa hàng>_book/gate_pw (chỉ quản trị đọc được).
   function openGateEdit() {
-    modal('<h2 style="margin:0 0 4px;font-size:18px">Đặt mật khẩu cửa hàng</h2><p class="muted small" style="margin:0">Để trống ô nào thì giữ nguyên mật khẩu cũ của cửa hàng đó. Đổi mật khẩu thì nhân viên phải nhập lại mật khẩu mới.</p>' +
-      STORES.map(function (st) { var has = S.gate[st.id] && S.gate[st.id].hash; return '<label class="f" for="gp_' + st.id + '">' + esc(st.name) + (has ? ' (đã đặt)' : ' (chưa đặt)') + '</label><input type="password" id="gp_' + st.id + '" autocomplete="new-password" placeholder="' + (has ? 'Giữ nguyên' : 'Nhập mật khẩu mới') + '">'; }).join('') +
-      '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="gCancel">Hủy</button><button class="btn pri" id="gOk">Lưu mật khẩu</button></div>');
-    $('gCancel').onclick = closeModal;
-    $('gOk').onclick = function () {
-      var next = {}, jobs = [];
-      STORES.forEach(function (st) {
-        var pw = $('gp_' + st.id).value;
-        if (S.gate[st.id]) next[st.id] = S.gate[st.id];
-        if (pw) {
-          if (pw.length < 4) { jobs.push(Promise.reject(new Error('Mật khẩu ' + st.name + ' cần ít nhất 4 ký tự.'))); return; }
+    var plain = {}, editing = {};
+    function row(st) {
+      var has = !!(S.gate[st.id] && S.gate[st.id].hash), pw = plain[st.id], ed = editing[st.id];
+      var cur = pw ? '<span class="gpw">' + esc(pw) + '</span>' : (has ? '<span class="muted small">Đã đặt trước đây, chưa xem được. Đổi một lần để lần sau hiện ở đây.</span>' : '<span class="muted small">Chưa đặt mật khẩu</span>');
+      return '<div class="gst"><div class="f" style="margin:0">' + esc(st.name) + '</div>' +
+        (ed ? '<div class="row" style="gap:8px;margin-top:6px;flex-wrap:nowrap"><input type="text" id="gp_' + st.id + '" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Mật khẩu mới (ít nhất 4 ký tự)" value="' + esc(ed.v || '') + '" style="flex:1;min-width:0"><button class="btn" data-gx="' + st.id + '" type="button">Thôi</button></div>'
+            : '<div class="row" style="gap:8px;margin-top:6px;align-items:center;flex-wrap:nowrap"><div style="flex:1;min-width:0">' + cur + '</div><button class="btn" data-ge="' + st.id + '" type="button">' + (has ? 'Đổi mật khẩu' : 'Đặt mật khẩu') + '</button></div>') +
+        '</div>';
+    }
+    function keep() { STORES.forEach(function (st) { var i = $('gp_' + st.id); if (i && editing[st.id]) editing[st.id].v = i.value; }); }
+    function draw(focusId) {
+      var any = Object.keys(editing).length > 0;
+      modal('<h2 style="margin:0 0 4px;font-size:18px">Mật khẩu cửa hàng</h2><p class="muted small" style="margin:0 0 6px">Nhân viên nhập mật khẩu này để mở cửa hàng. Đổi mật khẩu thì nhân viên phải nhập lại mật khẩu mới.</p>' +
+        STORES.map(row).join('') +
+        '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="gCancel" type="button">' + (any ? 'Hủy' : 'Đóng') + '</button>' + (any ? '<button class="btn pri" id="gOk" type="button">Lưu</button>' : '') + '</div>');
+      $('gCancel').onclick = closeModal;
+      document.querySelectorAll('[data-ge]').forEach(function (b) { b.onclick = function () { keep(); editing[b.getAttribute('data-ge')] = { v: '' }; draw(b.getAttribute('data-ge')); }; });
+      document.querySelectorAll('[data-gx]').forEach(function (b) { b.onclick = function () { keep(); delete editing[b.getAttribute('data-gx')]; draw(); }; });
+      if (focusId && $('gp_' + focusId)) $('gp_' + focusId).focus();
+      if (any) $('gOk').onclick = save;
+    }
+    function save() {
+      keep();
+      var next = {}, jobs = [], copies = [];
+      STORES.forEach(function (st) { if (S.gate[st.id]) next[st.id] = S.gate[st.id]; });
+      for (var k = 0; k < STORES.length; k++) {
+        var st = STORES[k], ed = editing[st.id]; if (!ed) continue;
+        var pw = (ed.v || '').trim();
+        if (pw.length < 4) { toast('Mật khẩu ' + st.name + ' cần ít nhất 4 ký tự.', 4000); var i = $('gp_' + st.id); if (i) i.focus(); return; }
+        (function (st, pw) {
           var salt = hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
           jobs.push(hashPw(salt, pw).then(function (h) { next[st.id] = { salt: salt, hash: h, at: iso() }; }));
-        }
-      });
-      if (!jobs.length) { closeModal(); return; }
+          copies.push([st.id.toLowerCase() + '_book/gate_pw', { pw: pw, at: iso() }]);
+        })(st, pw);
+      }
       $('gOk').disabled = true;
-      Promise.all(jobs).then(function () { return S.db.doc('gate/main').set(next); }).then(function () { closeModal(); toast('Đã lưu mật khẩu'); })
+      Promise.all(jobs).then(function () { return S.db.doc('gate/main').set(next); })
+        .then(function () { return Promise.all(copies.map(function (c) { return S.db.doc(c[0]).set(c[1]); })); })
+        .then(function () { copies.forEach(function (c) { plain[c[0].split('_')[0].toUpperCase()] = c[1].pw; }); editing = {}; draw(); toast('Đã lưu mật khẩu'); })
         .catch(function (e) { var b = $('gOk'); if (b) b.disabled = false; toast(e && e.message ? e.message : 'Không lưu được mật khẩu', 5000); });
-    };
+    }
+    draw();
+    Promise.all(STORES.map(function (st) {
+      return S.db.doc(st.id.toLowerCase() + '_book/gate_pw').get().then(function (d) { if (d.exists && d.data() && d.data().pw) plain[st.id] = d.data().pw; }, function () {});
+    })).then(function () { if (!$('modal').hidden && $('gCancel')) { keep(); draw(); } });
   }
   function resetStoreState() {
     S.unsubs.forEach(function (u) { try { u(); } catch (e) {} }); S.unsubs = [];
