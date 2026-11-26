@@ -1,5 +1,6 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Kiểm kê Foremost</title><meta name="robots" content="noindex"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#1F2933">
 <style>
   /* Bố cục theo bộ thiết kế FOREMOST VN: máy tính có thanh bên + thanh tiêu đề + bảng đếm; điện thoại có thẻ đếm bằng ngón cái và tab dưới. Một màu nhấn vàng đồng duy nhất. */
   :root {
@@ -285,6 +286,89 @@
   #apboot .pb i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #c9a646, #e2c677); border-radius: 99px; transition: width .25s ease; }
   #apboot .st { width: min(280px, 70vw); display: flex; justify-content: space-between; font-size: 13px; color: #6b7280; }
   @media (prefers-reduced-motion: reduce) { #apboot, #apboot .pb i { transition: none; } }
+</style>
+<style id="fm-theme">
+  /* Giao diện theo app Foremost (Sản phẩm TM): nền xám lạnh có quầng xanh, thanh tiêu đề than chì dạng kính, thanh bên kính mờ, nút viên thuốc, màu nhấn xanh ngọc #0E7490. */
+  :root {
+    --bg: #EEF2F5; --surface: #ffffff; --surface2: #F4F6F8; --sunk: #EEF1F3;
+    --fg: #161C20; --ink2: #2C343A; --mute: #616A70;
+    --line: #DCE0E3; --line-strong: #CACFD3; --line-shade: #B9BFC4;
+    --head-top: #F7F9FA; --head-bottom: #F1F4F6; --btn-bottom: #F4F6F8; --group-row: #EBEDEF; --group-ink: #161C20;
+    --accent: #0E7490; --accent-mark: #22A6C7; --accent-soft: #DDF2F8; --accent-soft-line: #9ED3E3; --on-accent: #ffffff;
+    --note-bg: #DDF2F8; --note-ink: #0B5468;
+    --table-ink: #161C20; --total-rule: #1F2933;
+    --sh-btn: inset 0 1px 0 #ffffff, 0 1px 1px rgba(15,25,35,.08), 0 2px 5px -1px rgba(15,25,35,.10);
+    --sh-primary: inset 0 1px 0 rgba(255,255,255,.35), 0 1px 1px rgba(14,116,144,.25), 0 6px 14px -6px rgba(14,116,144,.55);
+    --sh-panel: 0 1px 2px rgba(15,25,35,.05), 0 12px 30px -16px rgba(15,25,35,.25);
+    --sh-nav: 0 6px 16px -8px rgba(14,116,144,.45);
+    --sh-dialog: 0 30px 80px -20px rgba(15,25,35,.45);
+    --fm-glow1: rgba(34,166,199,.26); --fm-glow2: rgba(14,116,144,.16); --fm-glow3: rgba(46,160,120,.14);
+    --fm-side: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.46));
+    --fm-side-line: rgba(255,255,255,.7);
+    --fm-glass: rgba(255,255,255,.72);
+    --fm-tabs: rgba(255,255,255,.82);
+    --fm-nav-hover: rgba(255,255,255,.5); --fm-nav-cur: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.72)); --fm-nav-line: rgba(255,255,255,.9);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #3A4246; --surface: #1E2428; --surface2: #252C31; --sunk: #252C31;
+      --fg: #EEF2F5; --ink2: #CDD4D9; --mute: #98A2A8;
+      --line: #343D43; --line-strong: #455057; --line-shade: #2A3237;
+      --head-top: #283035; --head-bottom: #232A2F; --btn-bottom: #22292E;
+      --accent: #34BEDE; --accent-mark: #34BEDE; --accent-soft: #123A46; --accent-soft-line: #1E5E70; --on-accent: #ffffff;
+      --note-bg: #1E2428; --note-ink: #CDD4D9;
+      --fm-glow1: rgba(34,166,199,.30); --fm-glow2: rgba(14,116,144,.24); --fm-glow3: rgba(46,160,120,.18);
+      --fm-side: linear-gradient(180deg, rgba(18,22,26,.78), rgba(18,22,26,.62));
+      --fm-side-line: rgba(255,255,255,.08); --fm-glass: rgba(30,36,40,.72); --fm-tabs: rgba(22,27,31,.86);
+      --fm-nav-hover: rgba(255,255,255,.06); --fm-nav-cur: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07)); --fm-nav-line: rgba(255,255,255,.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #3A4246; --surface: #1E2428; --surface2: #252C31; --sunk: #252C31;
+    --fg: #EEF2F5; --ink2: #CDD4D9; --mute: #98A2A8;
+    --line: #343D43; --line-strong: #455057; --line-shade: #2A3237;
+    --head-top: #283035; --head-bottom: #232A2F; --btn-bottom: #22292E;
+    --accent: #34BEDE; --accent-mark: #34BEDE; --accent-soft: #123A46; --accent-soft-line: #1E5E70; --on-accent: #ffffff;
+    --note-bg: #1E2428; --note-ink: #CDD4D9;
+    --fm-glow1: rgba(34,166,199,.30); --fm-glow2: rgba(14,116,144,.24); --fm-glow3: rgba(46,160,120,.18);
+    --fm-side: linear-gradient(180deg, rgba(18,22,26,.78), rgba(18,22,26,.62));
+    --fm-side-line: rgba(255,255,255,.08); --fm-glass: rgba(30,36,40,.72); --fm-tabs: rgba(22,27,31,.86);
+      --fm-nav-hover: rgba(255,255,255,.06); --fm-nav-cur: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07)); --fm-nav-line: rgba(255,255,255,.16);
+  }
+  body { background: radial-gradient(900px 520px at 8% -8%, var(--fm-glow1), transparent 62%), radial-gradient(820px 620px at 100% 22%, var(--fm-glow2), transparent 60%), radial-gradient(760px 520px at 38% 108%, var(--fm-glow3), transparent 62%), var(--bg); background-attachment: fixed; }
+  /* Thanh tiêu đề than chì dạng kính */
+  .top { background: linear-gradient(180deg, rgba(31,41,51,.86), rgba(31,41,51,.74)); -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6); border-bottom: 1px solid rgba(255,255,255,.06); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 30px -14px rgba(15,25,35,.55); color: #fff; }
+  .top .brand .ttl { color: #fff; }
+  .top .brand .co, .top .brand .who, .top .sync { color: rgba(255,255,255,.78); }
+  .top .brand .vr { background: rgba(255,255,255,.28); }
+  .top .btn { border: 1px solid #CACFD3; background: linear-gradient(180deg, #FFFFFF, #F4F6F8); color: #2C343A; border-radius: 999px; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,.18); }
+  .top .btn.iconbtn { border-radius: 50%; }
+  .top .btn svg.i { color: #2C343A; }
+  /* Thanh bên kính mờ */
+  @media (min-width: 861px) {
+    .side { background: var(--fm-side); -webkit-backdrop-filter: blur(18px) saturate(1.8); backdrop-filter: blur(18px) saturate(1.8); border-right: 1px solid var(--fm-side-line); }
+  }
+  .side .logo { gap: 10px; padding: 6px 8px 2px; font-size: 13px; letter-spacing: .05em; color: var(--fg); }
+  .side .logo i { width: 34px; height: 34px; border-radius: 9px; background: url("logo-tm.png") center/cover no-repeat; box-shadow: 0 1px 2px rgba(15,25,35,.12), 0 6px 14px -8px rgba(14,116,144,.5); }
+  .nav { border-radius: 12px; }
+  .nav:hover { background: var(--fm-nav-hover); }
+  .nav.cur, .nav[aria-selected="true"] { border-color: var(--fm-nav-line); background: var(--fm-nav-cur); box-shadow: var(--sh-nav); }
+  .nav.cur::before, .nav[aria-selected="true"]::before { display: none; }
+  /* Nút viên thuốc */
+  .btn { border-radius: 999px; }
+  .btn.pri, .btn.ok { border-color: rgba(14,116,144,.9); border-bottom-color: #0B5E75; background: linear-gradient(180deg, rgba(52,190,222,.95), rgba(14,116,144,.92)); color: #fff; box-shadow: var(--sh-primary); }
+  .btn.pri svg.i, .btn.ok svg.i { color: #fff; }
+  .card { border-radius: 14px; }
+  .seg { border-radius: 999px; }
+  .seg button { border-radius: 999px; }
+  .seg button[aria-selected="true"] { border-color: var(--line-strong); background: var(--surface); color: var(--accent); box-shadow: 0 4px 12px -6px rgba(14,116,144,.45); }
+  .bar i { background: linear-gradient(90deg, #0E7490, #34BEDE); }
+  .tabs { background: var(--fm-tabs); -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6); }
+  /* Màn hình mở app */
+  #apboot { background: radial-gradient(700px 420px at 10% -10%, rgba(34,166,199,.26), transparent 62%), radial-gradient(640px 480px at 100% 30%, rgba(14,116,144,.16), transparent 60%), #EEF2F5; color: #1F2933; }
+  #apboot .lg { width: 96px; height: 96px; border-radius: 24px; background: url("logo-tm.png") center/cover no-repeat; -webkit-mask: none; mask: none; box-shadow: 0 2px 4px rgba(15,25,35,.08), 0 18px 40px -18px rgba(14,116,144,.55); }
+  #apboot .pb { background: #DCE0E3; }
+  #apboot .pb i { background: linear-gradient(90deg, #2C3640, #0E7490, #34BEDE); }
 </style>
 
 <div id="apboot" role="progressbar" aria-label="Đang mở ứng dụng" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="lg"></div><div class="t">Kiểm kê</div><div class="s">Foremost · 3 cửa hàng</div><div class="pb"><i id="apboot-i"></i></div><div class="st"><span>Đang mở ứng dụng…</span><b id="apboot-p">0%</b></div><div class="s" style="margin-top:8px">CÔNG TY TNHH FOREMOST VN</div><div class="own">© 2026 Phần mềm thuộc quyền sở hữu<br>của Nguyễn Tuấn Minh</div></div>
