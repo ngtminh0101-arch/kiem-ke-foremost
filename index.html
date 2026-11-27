@@ -581,9 +581,9 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var sub = S.OWNER ? (has ? 'Đã đặt mật khẩu' : 'Chưa đặt mật khẩu, nhân viên chưa mở được') : open ? 'Đã mở khóa trong phiên này' : has ? 'Cần mật khẩu' : 'Chưa mở, nhờ quản trị đặt mật khẩu';
       return '<button class="store' + (open && !S.OWNER ? ' open' : '') + '" data-store="' + st.id + '">' + ic('shop', 'shop') + '<span class="grow"><span class="nm">' + esc(st.name) + '</span><span class="st">' + esc(sub) + '</span></span>' + (open ? ic('chev', 'chev') : ic('lock', 'lk', 'Đang khóa')) + '</button>';
     }).join('') + '</div>' +
-      (S.OWNER ? '<div class="card ownerbox"><b>Mật khẩu cửa hàng</b><p class="small muted" style="margin:4px 0 10px">Bạn là quản trị nên mở được mọi cửa hàng không cần mật khẩu. Nhân viên phải nhập mật khẩu của từng cửa hàng.</p><div class="row"><button class="btn" id="btnGate">Đặt mật khẩu</button><button class="btn" id="btnRoles">Tài khoản được phép</button><button class="btn" id="btnBackup">Sao lưu và nhập dữ liệu</button></div></div>' : '');
+      (S.OWNER ? '<div class="card ownerbox"><b>Mật khẩu cửa hàng</b><p class="small muted" style="margin:4px 0 10px">Bạn là quản trị nên mở được mọi cửa hàng không cần mật khẩu. Nhân viên phải nhập mật khẩu của từng cửa hàng.</p><div class="row"><button class="btn" id="btnGate">Đặt mật khẩu</button><button class="btn" id="btnRoles">Tài khoản được phép</button><button class="btn" id="btnBackup">Sao lưu và nhập dữ liệu</button><button class="btn" id="btnTpSync">Cập nhật thành phẩm</button></div></div>' : '');
     Array.prototype.forEach.call(v.querySelectorAll('[data-store]'), function (b) { b.onclick = function () { askOpen(b.getAttribute('data-store')); }; });
-    var g = $('btnGate'); if (g) g.onclick = openGateEdit; if ((g = $('btnRoles'))) g.onclick = openRoles; if ((g = $('btnBackup'))) g.onclick = openBackup;
+    var g = $('btnGate'); if (g) g.onclick = openGateEdit; if ((g = $('btnRoles'))) g.onclick = openRoles; if ((g = $('btnBackup'))) g.onclick = openBackup; if ((g = $('btnTpSync'))) g.onclick = openTpSync;
   }
   function askOpen(id) {
     var st = storeById(id); if (!st) return;
@@ -1192,6 +1192,91 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     $('bText').oninput = function () { var r = parse(); $('bInfo').textContent = r.out.length ? 'Sẽ thêm ' + r.out.length + ' nguyên liệu mới (bỏ qua dòng trùng tên).' : ''; };
     $('bOk').onclick = function () { var r = parse(); if (!r.out.length) { toast('Không có dòng hợp lệ để thêm'); return; } closeModal(); saveCatalog(sortedByArea((S.catN || []).concat(r.out)), r.bk).then(function () { toast('Đã thêm ' + r.out.length + ' nguyên liệu'); }); };
   }
+  // Cập nhật danh mục thành phẩm cho cả 3 cửa hàng từ file Excel "Thành phẩm Bakery" xuất ở app Foremost (Sản phẩm TM).
+  // So theo mã: thêm mã mới, sửa tên/đơn vị/nhóm khi đổi; mã không còn trong file chỉ xóa khi quản trị tick chọn. Vị trí, số sổ, mã nội bộ giữ nguyên.
+  var FOREMOST_APP = 'https://claude.ai/artifact/Sy4vf7EKmT62PZFQmNA2bb';
+  function tpKey(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').trim().toUpperCase(); }
+  function tpUnit(u) { u = String(u || '').trim(); return tpKey(u) === 'MON' ? 'Món' : u; }
+  function parseTpFile(buf) {
+    var wb = XLSX.read(buf, { type: 'array' }), name = wb.SheetNames.filter(function (n) { return /thanh pham/i.test(tpKey(n)); })[0] || wb.SheetNames[0];
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false }), h = -1, c = {};
+    for (var i = 0; i < Math.min(rows.length, 30) && h < 0; i++) {
+      var r = rows[i].map(tpKey), m = r.indexOf('MA'), t = r.findIndex(function (x) { return /^TEN/.test(x); });
+      if (m >= 0 && t >= 0) { h = i; c = { ma: m, ten: t, nhom: r.indexOf('NHOM'), dv: r.findIndex(function (x) { return x === 'DVT' || x === 'DON VI'; }) }; }
+    }
+    if (h < 0) throw new Error('Không thấy dòng tiêu đề có cột "Mã" và "Tên" trong file.');
+    var out = [], seen = {};
+    rows.slice(h + 1).forEach(function (r) {
+      var ma = String(r[c.ma] || '').trim(), ten = String(r[c.ten] || '').trim(); if (!ma || !ten || seen[ma]) return; seen[ma] = 1;
+      out.push({ kr: ma, ten: ten, nhom: (c.nhom >= 0 && String(r[c.nhom] || '').trim()) || 'CHƯA PHÂN NHÓM', dv: c.dv >= 0 ? tpUnit(r[c.dv]) : '' });
+    });
+    if (!out.length) throw new Error('File không có mã thành phẩm nào.');
+    return out;
+  }
+  function tpPlan(cur, src) {
+    var items = (cur && cur.items) || [], byKr = {}, inFile = {}, add = [], chg = [], gone = [];
+    items.forEach(function (x) { if (x.lo === 'tp' && x.kr) byKr[x.kr] = x; });
+    src.forEach(function (n) {
+      inFile[n.kr] = 1; var o = byKr[n.kr];
+      if (!o) { add.push(n); return; }
+      var d = [];
+      if (o.ten !== n.ten) d.push('tên'); if (n.dv && tpKey(o.dv) !== tpKey(n.dv)) d.push('đơn vị'); if (o.nhom !== n.nhom) d.push('nhóm');
+      if (d.length) chg.push({ o: o, n: n, d: d });
+    });
+    Object.keys(byKr).forEach(function (k) { if (!inFile[k]) gone.push(byKr[k]); });
+    return { items: items, rev: (cur && cur.rev) || 0, add: add, chg: chg, gone: gone };
+  }
+  function tpApply(pl, delGone) {
+    var ch = {}, gone = {};
+    pl.chg.forEach(function (c) { ch[c.o.id] = c; }); if (delGone) pl.gone.forEach(function (x) { gone[x.id] = 1; });
+    var used = {}; pl.items.forEach(function (x) { used[x.id] = 1; });
+    var items = pl.items.filter(function (x) { return !gone[x.id]; }).map(function (x) {
+      var c = ch[x.id]; if (!c) return x;
+      var y = Object.assign({}, x, { ten: c.n.ten, nhom: c.n.nhom }); if (c.n.dv && tpKey(x.dv) !== tpKey(c.n.dv)) y.dv = c.n.dv; return y;
+    });
+    pl.add.forEach(function (n) { var id = 'TP-' + n.kr; while (used[id]) id += '_'; used[id] = 1; items.push({ id: id, ten: n.ten, kr: n.kr, dv: n.dv, kv: LO.tp[2], nhom: n.nhom, lo: 'tp' }); });
+    return items;
+  }
+  function openTpSync() {
+    if (!S.OWNER || S.RO) return;
+    modal('<h2 style="margin:0 0 4px;font-size:18px">Cập nhật danh mục thành phẩm</h2>' +
+      '<p class="muted small" style="margin:0 0 10px">Lấy danh mục thành phẩm bakery mới nhất từ app Foremost (thư mục Sản phẩm TM) cho cả 3 cửa hàng.</p>' +
+      '<ol class="small" style="margin:0 0 10px;padding-left:20px;line-height:1.6"><li>Mở <a href="' + FOREMOST_APP + '" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">app Foremost</a>, xuất Excel danh mục <b>Thành phẩm Bakery</b>.</li><li>Chọn file vừa tải về ở ô dưới. App sẽ cho xem trước thay đổi rồi mới lưu.</li></ol>' +
+      '<input type="file" id="tpFile" accept=".xlsx,.xls,.csv"><div id="tpOut" style="margin-top:10px"></div>' +
+      '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="tpCancel" type="button">Đóng</button><button class="btn pri" id="tpOk" type="button" hidden>Cập nhật</button></div>');
+    $('tpCancel').onclick = closeModal;
+    var plans = null;
+    $('tpFile').onchange = function () {
+      var f = this.files && this.files[0]; if (!f) return; plans = null; $('tpOk').hidden = true;
+      var out = $('tpOut'); out.innerHTML = '<div class="muted small">Đang đọc file…</div>';
+      Promise.all([loadLib('xlsx'), f.arrayBuffer()]).then(function (r) {
+        var src = parseTpFile(r[1]);
+        return Promise.all(STORES.map(function (st) { return S.db.doc(st.id.toLowerCase() + '_nl_catalog/main').get(); })).then(function (snaps) {
+          plans = STORES.map(function (st, i) { return { st: st, pl: tpPlan(snaps[i].exists ? snaps[i].data() : null, src) }; });
+          var p0 = plans[0].pl, same = plans.every(function (x) { return x.pl.add.length === p0.add.length && x.pl.chg.length === p0.chg.length && x.pl.gone.length === p0.gone.length; });
+          function list(arr, f2) { return arr.length ? '<ul class="small" style="margin:4px 0 0;padding-left:18px;max-height:160px;overflow:auto">' + arr.slice(0, 300).map(f2).join('') + '</ul>' : ''; }
+          var any = plans.some(function (x) { return x.pl.add.length || x.pl.chg.length || x.pl.gone.length; });
+          out.innerHTML = '<div class="small"><b>File có ' + src.length + ' mã thành phẩm.</b></div>' +
+            plans.map(function (x) { return '<div class="small" style="margin-top:4px">' + esc(x.st.name) + ': thêm <b>' + x.pl.add.length + '</b>, sửa <b>' + x.pl.chg.length + '</b>, không còn trong file <b>' + x.pl.gone.length + '</b></div>'; }).join('') +
+            (any ? (same ? '' : '<div class="small muted" style="margin-top:4px">Danh sách dưới là của ' + esc(plans[0].st.name) + '.</div>') +
+              (p0.add.length ? '<details style="margin-top:8px" open><summary class="small"><b>Mã mới (' + p0.add.length + ')</b></summary>' + list(p0.add, function (n) { return '<li>' + esc(n.kr) + ' · ' + esc(n.ten) + ' <span class="muted">(' + esc(n.nhom) + (n.dv ? ', ' + esc(n.dv) : '') + ')</span></li>'; }) + '</details>' : '') +
+              (p0.chg.length ? '<details style="margin-top:8px"><summary class="small"><b>Mã đổi thông tin (' + p0.chg.length + ')</b></summary>' + list(p0.chg, function (c) { return '<li>' + esc(c.n.kr) + ' · ' + esc(c.n.ten) + ' <span class="muted">(đổi ' + c.d.join(', ') + (c.d.indexOf('tên') >= 0 ? '; tên cũ: ' + esc(c.o.ten) : '') + ')</span></li>'; }) + '</details>' : '') +
+              (p0.gone.length ? '<details style="margin-top:8px"><summary class="small"><b>Mã không còn trong file (' + p0.gone.length + ')</b></summary>' + list(p0.gone, function (x) { return '<li>' + esc(x.kr) + ' · ' + esc(x.ten) + '</li>'; }) + '</details>' +
+                '<label class="small" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="tpDel"> Xóa các mã không còn trong file khỏi danh mục</label>' : '')
+              : '<div class="small" style="margin-top:8px;color:var(--ok)">Danh mục cả 3 cửa hàng đã khớp với file, không cần cập nhật.</div>');
+          $('tpOk').hidden = !any;
+        });
+      }).catch(function (e) { out.innerHTML = '<div class="small" style="color:var(--bad)">' + esc(e && e.message && e.message !== 'lib' ? e.message : 'Không đọc được file. Kiểm tra mạng rồi thử lại.') + '</div>'; });
+    };
+    $('tpOk').onclick = function () {
+      if (!plans) return; var del = !!($('tpDel') && $('tpDel').checked), b = $('tpOk'); b.disabled = true; b.textContent = 'Đang lưu…';
+      Promise.all(plans.map(function (x) {
+        if (!x.pl.add.length && !x.pl.chg.length && !(del && x.pl.gone.length)) return null;
+        return S.db.doc(x.st.id.toLowerCase() + '_nl_catalog/main').set({ items: tpApply(x.pl, del), rev: x.pl.rev + 1 });
+      })).then(function () { closeModal(); toast('Đã cập nhật danh mục thành phẩm cho 3 cửa hàng', 4000); })
+        .catch(function (e) { b.disabled = false; b.textContent = 'Cập nhật'; toast(e && e.message ? e.message : 'Không lưu được', 5000); });
+    };
+  }
   function renderCatalog(v) {
     var view = S.catView, isN = view !== 'ts', cat = (S.catalog || []).filter(function (x) { return x.loai === view; }), last = null, cols = S.OWNER ? (isN ? 4 : 3) : 2, canEdit = isN && S.OWNER && !S.RO;
     var rows = cat.map(function (it) {
@@ -1201,10 +1286,10 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     }).join('');
     v.innerHTML = '<div class="seg" id="catSw">' + [['ts', 'Tài sản'], ['nl', 'Nguyên liệu'], ['vt', 'Bao bì - vật tư'], ['tp', 'Thành phẩm']].map(function (o) { return '<button data-cv="' + o[0] + '" aria-selected="' + (view === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
       '<div class="card"><b>' + cat.length + ' mục</b><div class="small muted">' + (S.OWNER ? 'Số sổ chỉ quản trị thấy. Sau mỗi đợt, bấm Duyệt để cập nhật theo số đếm thực tế.' : 'Danh sách cần kiểm kê của cửa hàng này.') + '</div>' +
-      (canEdit ? '<div class="row" style="margin-top:12px"><button class="btn pri" id="cAdd">+ Thêm ' + catName() + '</button><button class="btn" id="cBulk">Nhập nhanh từ Excel</button></div>' : '') + '</div>' +
+      (canEdit ? '<div class="row" style="margin-top:12px"><button class="btn pri" id="cAdd">+ Thêm ' + catName() + '</button><button class="btn" id="cBulk">Nhập nhanh từ Excel</button>' + (view === 'tp' ? '<button class="btn" id="cTpSync">Cập nhật từ app Foremost</button>' : '') + '</div>' : '') + '</div>' +
       '<div class="card tablewrap"><table><thead><tr><th>Tên</th><th>Đơn vị</th>' + (S.OWNER ? '<th class="num">Số sổ</th>' + (isN ? '<th></th>' : '') : '') + '</tr></thead><tbody>' + (rows || '<tr><td colspan="' + cols + '" class="muted">Chưa có danh mục.</td></tr>') + '</tbody></table></div>';
     $('catSw').onclick = function (e) { var b = e.target.closest('button[data-cv]'); if (b) { S.catView = b.getAttribute('data-cv'); renderCatalog(v); } };
-    var el; if ((el = $('cAdd'))) el.onclick = function () { openItemEdit(null); }; if ((el = $('cBulk'))) el.onclick = openBulk;
+    var el; if ((el = $('cAdd'))) el.onclick = function () { openItemEdit(null); }; if ((el = $('cBulk'))) el.onclick = openBulk; if ((el = $('cTpSync'))) el.onclick = openTpSync;
     Array.prototype.forEach.call(v.querySelectorAll('[data-edit]'), function (b) { b.onclick = function () { if (!S.RO) openItemEdit(b.getAttribute('data-edit')); }; });
   }
   var LIBS = { xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', pdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js' };
