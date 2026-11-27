@@ -476,7 +476,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     cat.forEach(function (it) { if (open || counted(S.counts[it.id])) { out.push(it); } seen[it.id] = 1; });
     Object.keys(S.counts).forEach(function (id) {
       var c = S.counts[id];
-      if (c && c.nw && !seen[id]) out.push({ id: id, ten: c.ten || '(chưa đặt tên)', kr: '', nhom: c.nhom || '', kv: c.kv || 'Cửa hàng', dv: c.dv || '', loai: c.loai || 'ts', nw: true });
+      if (c && c.nw && !seen[id]) out.push({ id: id, ten: c.ten || '(chưa đặt tên)', kr: c.loai && c.loai !== 'ts' ? (c.ma || '') : '', nhom: c.nhom || '', kv: c.kv || 'Cửa hàng', dv: c.dv || '', loai: c.loai || 'ts', nw: true });
     });
     var ord = {}, n = 0; out.forEach(function (x) { var k = x.loai + '|' + x.kv; if (ord[k] == null) ord[k] = n++; });
     return out.map(function (x, i) { return [x, i]; }).sort(function (a, b) { return (RANK[a[0].loai] - RANK[b[0].loai]) || (ord[a[0].loai + '|' + a[0].kv] - ord[b[0].loai + '|' + b[0].kv]) || (a[1] - b[1]); }).map(function (p) { return p[0]; });
@@ -1038,7 +1038,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
     var areas = uniq(['Cửa hàng'].concat(AREAS, S.items.map(function (x) { return x.kv; })));
     var groups = uniq((S.catalog || []).map(function (x) { return x.nhom; }));
     modal('<h2 style="margin:0 0 4px;font-size:18px">Thêm tài sản / nguyên liệu phát sinh</h2><p class="muted small" style="margin:0">Dùng khi cửa hàng có mục mà danh mục chưa có.</p>' +
-      '<label class="f" for="aLoai">Loại</label><select id="aLoai" style="width:100%"><option value="ts">Tài sản</option><option value="nl">Nguyên liệu</option><option value="vt">Bao bì - vật tư</option><option value="tp">Thành phẩm</option></select><label class="f" for="aName">Tên</label><input type="text" id="aName" maxlength="120">' +
+      '<label class="f" for="aLoai">Loại</label><select id="aLoai" style="width:100%"><option value="ts">Tài sản</option><option value="nl">Nguyên liệu</option><option value="vt">Bao bì - vật tư</option><option value="tp">Thành phẩm</option></select><div id="aMaRow" hidden><label class="f" for="aMa">Mã hàng</label><input type="text" id="aMa" maxlength="40" autocomplete="off" placeholder="Ví dụ: NLN0123, VT0045…"></div><label class="f" for="aName">Tên</label><input type="text" id="aName" maxlength="120">' +
       '<div class="row" style="align-items:flex-end"><div class="grow"><label class="f" for="aQty">Số lượng thực tế</label><input type="text" inputmode="decimal" id="aQty" value="1"></div>' +
       '<div class="grow"><label class="f" for="aUnit">Đơn vị (nếu có)</label><input type="text" id="aUnit" list="dlUnits" maxlength="20" placeholder="kg, lít, hộp…"></div></div>' +
       '<label class="f" for="aArea">Vị trí</label><select id="aArea" style="width:100%">' + opts(areas) + '</select>' +
@@ -1046,13 +1046,19 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       '<datalist id="dlUnits">' + opts(UNITS) + '</datalist><datalist id="dlGroups">' + opts(groups) + '</datalist>' +
       '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="aCancel">Hủy</button><button class="btn pri" id="aOk">Thêm</button></div>');
     $('aCancel').onclick = closeModal; $('aName').focus();
-    $('aLoai').onchange = function () { $('aArea').value = LO[this.value] ? LO[this.value][2] : 'Cửa hàng'; };
+    $('aLoai').onchange = function () { $('aArea').value = LO[this.value] ? LO[this.value][2] : 'Cửa hàng'; $('aMaRow').hidden = this.value === 'ts'; };
+    if (LO[S.f.loai] || S.f.loai === 'ts') { $('aLoai').value = S.f.loai; $('aLoai').onchange(); }
     $('aOk').onclick = function () {
       var name = $('aName').value.trim(), q = Number($('aQty').value.replace(',', '.'));
       if (!name) { toast('Chưa nhập tên'); return; }
       if (!isFinite(q) || q < 0) { toast('Số lượng không hợp lệ'); return; }
+      var lo = $('aLoai').value, ma = lo === 'ts' ? '' : $('aMa').value.trim().toUpperCase();
+      if (ma) {
+        var dup = S.items.filter(function (x) { return x.loai !== 'ts' && x.kr && String(x.kr).toUpperCase() === ma; })[0];
+        if (dup) { toast('Mã ' + ma + ' đã có: ' + dup.ten + '. Hãy tìm mục đó trong danh sách để nhập số.', 5000); return; }
+      }
       var id = 'NEW-' + Math.random().toString(36).slice(2, 8);
-      S.counts[id] = { nw: true, loai: $('aLoai').value, ten: name, kv: $('aArea').value, nhom: $('aGroup').value.trim(), dv: $('aUnit').value.trim(), q: q };
+      S.counts[id] = { nw: true, loai: lo, ma: ma, ten: name, kv: $('aArea').value, nhom: $('aGroup').value.trim(), dv: $('aUnit').value.trim(), q: q };
       closeModal(); edit(id, {}); relist(); renderList(); patchStats(); toast('Đã thêm ' + name);
     };
   }
@@ -1093,7 +1099,7 @@ window.__ap=function(k){got[k]=1;};window.__apDone=function(){done=true;};})();
       var nl = it.loai !== 'ts', q = nl ? plan.qtyN : plan.qtyA;
       if (it.nw) {
         var cid = (nl ? LO[it.loai][3] + '-N' : CFG.id + '-N') + it.id.replace(/^NEW-/, '');
-        if (!ids[cid]) { var rc = { id: cid, ten: it.ten, kr: '', nhom: it.nhom || '', kv: it.kv || (nl ? LO[it.loai][2] : 'Cửa hàng'), dv: it.dv || '' }; if (it.loai === 'vt' || it.loai === 'tp') rc.lo = it.loai; (nl ? plan.newN : plan.newA).push(rc); }
+        if (!ids[cid]) { var rc = { id: cid, ten: it.ten, kr: it.kr || '', nhom: it.nhom || '', kv: it.kv || (nl ? LO[it.loai][2] : 'Cửa hàng'), dv: it.dv || '' }; if (it.loai === 'vt' || it.loai === 'tp') rc.lo = it.loai; (nl ? plan.newN : plan.newA).push(rc); }
         q[cid] = Number(c.q); plan.added++;
       } else {
         var b = bookQty(it.id);
